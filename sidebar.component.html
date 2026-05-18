@@ -4,23 +4,18 @@
 
   <!-- Header -->
   <div class="sidebar__header">
-    <span class="sidebar__title">Conversations</span>
-    <button
-      class="sidebar__icon-btn"
-      (click)="onToggleSidebar()"
-      title="Collapse sidebar"
-      aria-label="Collapse sidebar"
-    >
-      <span class="icon">&#8249;</span>
-    </button>
+    <div class="sidebar__brand">
+      <span class="sidebar__brand-dot"></span>
+      <span class="sidebar__brand-name">Conversations</span>
+    </div>
   </div>
 
-  <!-- New conversation button -->
+  <!-- New conversation -->
   <div class="sidebar__actions">
     <button
       class="sidebar__new-btn"
       (click)="onNewConversation()"
-      aria-label="New conversation"
+      aria-label="Start new conversation"
     >
       <span class="icon">+</span>
       New Chat
@@ -29,27 +24,35 @@
 
   <!-- Search -->
   <div class="sidebar__search">
-    <input
-      class="sidebar__search-input"
-      type="text"
-      placeholder="Search conversations..."
-      [value]="store.searchQuery()"
-      (input)="onSearchChange($any($event.target).value)"
-      aria-label="Search conversations"
-    />
+    <div class="sidebar__search-wrap">
+      <span class="sidebar__search-icon">🔍</span>
+      <input
+        class="sidebar__search-input"
+        type="text"
+        placeholder="Search conversations..."
+        [value]="store.searchQuery()"
+        (input)="onSearchChange($any($event.target).value)"
+        aria-label="Search conversations"
+      />
+    </div>
   </div>
 
-  <!-- Loading state -->
+  <!-- Skeleton loading -->
   @if (store.isLoadingConversations()) {
     <div class="sidebar__loading">
-      <div class="sidebar__skeleton" />
-      <div class="sidebar__skeleton" />
-      <div class="sidebar__skeleton" />
+      <div class="sidebar__skeleton"></div>
+      <div class="sidebar__skeleton"></div>
+      <div class="sidebar__skeleton"></div>
     </div>
   }
 
   <!-- Conversation list -->
   @if (!store.isLoadingConversations()) {
+
+    @if (store.filteredConversations().length > 0) {
+      <div class="sidebar__section-label">Recent</div>
+    }
+
     <ul class="sidebar__list" role="list">
 
       @for (conv of store.filteredConversations(); track conv.conversation_id) {
@@ -63,46 +66,48 @@
           (keydown.enter)="onSelect(conv)"
           [attr.aria-current]="store.activeConversationId() === conv.conversation_id ? 'page' : null"
         >
-          <!-- Normal state -->
+
           @if (confirmDeleteId() !== conv.conversation_id) {
+            <!-- Avatar -->
+            <div class="sidebar__item-avatar" aria-hidden="true">
+              {{ conv.title.charAt(0).toUpperCase() }}
+            </div>
+
+            <!-- Content -->
             <div class="sidebar__item-content">
               <div class="sidebar__item-top">
                 <span class="sidebar__item-title">{{ conv.title }}</span>
-                <span class="sidebar__item-time">
-                  {{ timeAgo(conv.last_message_at) }}
-                </span>
+                <span class="sidebar__item-time">{{ timeAgo(conv.last_message_at) }}</span>
               </div>
               @if (conv.last_message) {
                 <p class="sidebar__item-preview">{{ conv.last_message }}</p>
+              } @else {
+                <p class="sidebar__item-preview">New conversation</p>
               }
             </div>
+
+            <!-- Delete -->
             <button
               class="sidebar__delete-btn"
               (click)="onDeleteClick($event, conv.conversation_id)"
-              title="Delete conversation"
+              title="Delete"
               aria-label="Delete conversation"
-            >
-              &#10005;
-            </button>
+            >✕</button>
           }
 
           <!-- Inline delete confirmation -->
           @if (confirmDeleteId() === conv.conversation_id) {
             <div class="sidebar__confirm">
-              <span class="sidebar__confirm-text">Delete this chat?</span>
+              <span class="sidebar__confirm-text">Delete chat?</span>
               <div class="sidebar__confirm-actions">
                 <button
                   class="sidebar__confirm-btn sidebar__confirm-btn--danger"
                   (click)="onConfirmDelete($event, conv.conversation_id)"
-                >
-                  Delete
-                </button>
+                >Yes</button>
                 <button
                   class="sidebar__confirm-btn sidebar__confirm-btn--cancel"
                   (click)="onCancelDelete($event)"
-                >
-                  Cancel
-                </button>
+                >No</button>
               </div>
             </div>
           }
@@ -111,12 +116,13 @@
       }
 
       <!-- Empty state -->
-      @if (store.filteredConversations().length === 0 && !store.isLoadingConversations()) {
+      @if (store.filteredConversations().length === 0) {
         <li class="sidebar__empty">
+          <span class="sidebar__empty-icon">💬</span>
           @if (store.searchQuery()) {
-            <span>No results for "{{ store.searchQuery() }}"</span>
+            <span class="sidebar__empty-text">No results for<br />"{{ store.searchQuery() }}"</span>
           } @else {
-            <span>No conversations yet. Start a new chat!</span>
+            <span class="sidebar__empty-text">No conversations yet.<br />Start a new chat!</span>
           }
         </li>
       }

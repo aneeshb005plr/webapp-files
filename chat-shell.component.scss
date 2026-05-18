@@ -1,31 +1,77 @@
 // src/app/chat/components/chat-shell/chat-shell.component.scss
+// Full solid background to block AppKit body background texture.
 
 :host {
   display:  block;
-  height:   calc(100vh - 60px); // subtract header height
+  height:   calc(100vh - 56px); // AppKit4 header is 56px
   overflow: hidden;
+  background: var(--app-bg);    // solid — blocks body wavy pattern
 }
 
 .chat-shell {
-  display:        flex;
-  height:         100%;
-  background:     var(--app-bg);
-  overflow:       hidden;
-  transition:     all 0.25s ease;
+  display:    flex;
+  height:     100%;
+  background: var(--app-bg);
+  overflow:   hidden;
+  position:   relative;
 
-  // ── Sidebar panel ──────────────────────────────────────────────────────
+  // ── Sidebar ──────────────────────────────────────────────────────────────
   &__sidebar {
-    width:        280px;
-    min-width:    280px;
-    height:       100%;
+    width:      280px;
+    min-width:  280px;
+    height:     100%;
+    background: var(--app-bg-container);
     border-right: 1px solid var(--app-border);
-    background:   var(--app-bg-container);
-    overflow:     hidden;
-    transition:   width 0.25s ease, min-width 0.25s ease;
-    flex-shrink:  0;
+    overflow:   hidden;
+    flex-shrink: 0;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    // Subtle shadow for sidebar separation
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
   }
 
-  // ── Main area ──────────────────────────────────────────────────────────
+  // ── Toggle button — always visible ───────────────────────────────────────
+  // Sits right at the edge between sidebar and main area
+  &__toggle {
+    position:    absolute;
+    left:        268px;   // sidebar width - 12px overlap
+    top:         50%;
+    transform:   translateY(-50%);
+    z-index:     50;
+    width:       24px;
+    height:      48px;
+    background:  var(--app-bg-container);
+    border:      1px solid var(--app-border);
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+    cursor:      pointer;
+    display:     flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:  2px 0 6px rgba(0, 0, 0, 0.08);
+    transition:  left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                 background 0.15s ease;
+    padding:     0;
+
+    &:hover {
+      background: var(--app-bg-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #d04a02;
+      outline-offset: 2px;
+    }
+  }
+
+  &__toggle-icon {
+    font-size:   1.1rem;
+    color:       var(--app-text-secondary);
+    line-height: 1;
+    user-select: none;
+  }
+
+  // ── Main area ─────────────────────────────────────────────────────────────
   &__main {
     flex:       1;
     height:     100%;
@@ -33,33 +79,65 @@
     display:    flex;
     flex-direction: column;
     background: var(--app-bg);
+    min-width:  0; // prevent flex overflow
   }
 
-  // ── Placeholder — removed in Step 4 ───────────────────────────────────
-  &__placeholder {
+  // ── Empty state ───────────────────────────────────────────────────────────
+  &__empty {
     display:         flex;
+    flex-direction:  column;
     align-items:     center;
     justify-content: center;
     height:          100%;
-    color:           var(--app-text-secondary);
-    font-size:       0.9rem;
+    gap:             0.75rem;
+    padding:         2rem;
+    text-align:      center;
   }
 
-  // ── Collapsed sidebar ──────────────────────────────────────────────────
+  &__empty-icon {
+    font-size:   2.5rem;
+    line-height: 1;
+    opacity:     0.4;
+  }
+
+  &__empty-title {
+    font-size:   1.1rem;
+    font-weight: 600;
+    color:       var(--app-text-primary);
+    margin:      0;
+  }
+
+  &__empty-subtitle {
+    font-size: 0.875rem;
+    color:     var(--app-text-secondary);
+    margin:    0;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+
+  // ── Collapsed state ───────────────────────────────────────────────────────
   &.sidebar-collapsed {
+
     .chat-shell__sidebar {
       width:     0;
       min-width: 0;
     }
+
+    .chat-shell__toggle {
+      left: 0;
+      border-radius: 0 6px 6px 0;
+      border-left: 1px solid var(--app-border);
+    }
   }
 
-  // ── Mobile ────────────────────────────────────────────────────────────
+  // ── Mobile ────────────────────────────────────────────────────────────────
   @media (max-width: 768px) {
+
     .chat-shell__sidebar {
       position:   absolute;
       z-index:    100;
       height:     100%;
-      box-shadow: 2px 0 8px var(--app-shadow);
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
     }
 
     &.sidebar-collapsed {
@@ -68,6 +146,14 @@
         min-width: 0;
         box-shadow: none;
       }
+    }
+
+    .chat-shell__toggle {
+      left: 268px;
+    }
+
+    &.sidebar-collapsed .chat-shell__toggle {
+      left: 0;
     }
   }
 }

@@ -3,14 +3,31 @@
 <div class="chat-shell" [class.sidebar-collapsed]="store.sidebarCollapsed()">
 
   <!-- Sidebar -->
-  <aside class="chat-shell__sidebar">
+  <aside class="chat-shell__sidebar" [attr.aria-hidden]="store.sidebarCollapsed()">
     <app-sidebar />
   </aside>
 
-  <!-- Main area — chat window goes here in Step 4 -->
+  <!-- Sidebar toggle tab — always visible, floats on left edge of main area -->
+  <button
+    class="chat-shell__toggle"
+    (click)="store.toggleSidebar()"
+    [attr.aria-label]="store.sidebarCollapsed() ? 'Open sidebar' : 'Close sidebar'"
+    [title]="store.sidebarCollapsed() ? 'Open sidebar' : 'Close sidebar'"
+  >
+    <span class="chat-shell__toggle-icon">
+      {{ store.sidebarCollapsed() ? '›' : '‹' }}
+    </span>
+  </button>
+
+  <!-- Main content area -->
   <main class="chat-shell__main">
-    <div class="chat-shell__placeholder">
-      <p>Select a conversation or start a new one</p>
+    <!-- Chat window replaces this placeholder in Step 4 -->
+    <div class="chat-shell__empty">
+      <div class="chat-shell__empty-icon">💬</div>
+      <h3 class="chat-shell__empty-title">NextGen AMS Support</h3>
+      <p class="chat-shell__empty-subtitle">
+        Select a conversation from the sidebar or start a new one
+      </p>
     </div>
   </main>
 
