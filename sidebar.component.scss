@@ -1,0 +1,298 @@
+// src/app/chat/components/sidebar/sidebar.component.scss
+
+:host {
+  display:        flex;
+  flex-direction: column;
+  height:         100%;
+  overflow:       hidden;
+}
+
+.sidebar {
+  display:        flex;
+  flex-direction: column;
+  height:         100%;
+  background:     var(--app-bg-container);
+  overflow:       hidden;
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  &__header {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    padding:         1rem 1rem 0.5rem;
+    flex-shrink:     0;
+  }
+
+  &__title {
+    font-size:   0.8rem;
+    font-weight: 600;
+    color:       var(--app-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__icon-btn {
+    background:  none;
+    border:      none;
+    cursor:      pointer;
+    color:       var(--app-text-secondary);
+    padding:     0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size:   1.2rem;
+    line-height: 1;
+    transition:  background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--app-bg-hover);
+      color:      var(--app-text-primary);
+    }
+  }
+
+  // ── New chat button ──────────────────────────────────────────────────────
+  &__actions {
+    padding:    0 0.75rem 0.5rem;
+    flex-shrink: 0;
+  }
+
+  &__new-btn {
+    display:         flex;
+    align-items:     center;
+    gap:             0.5rem;
+    width:           100%;
+    padding:         0.6rem 0.75rem;
+    background:      #d04a02;
+    color:           #ffffff;
+    border:          none;
+    border-radius:   8px;
+    font-size:       0.875rem;
+    font-weight:     500;
+    cursor:          pointer;
+    transition:      background 0.15s ease, transform 0.1s ease;
+
+    &:hover {
+      background: #b53d00;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    .icon {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+  }
+
+  // ── Search ───────────────────────────────────────────────────────────────
+  &__search {
+    padding:    0 0.75rem 0.5rem;
+    flex-shrink: 0;
+  }
+
+  &__search-input {
+    width:         100%;
+    padding:       0.5rem 0.75rem;
+    background:    var(--app-bg);
+    border:        1px solid var(--app-border);
+    border-radius: 6px;
+    color:         var(--app-text-primary);
+    font-size:     0.875rem;
+    outline:       none;
+    box-sizing:    border-box;
+    transition:    border-color 0.15s ease;
+
+    &::placeholder {
+      color: var(--app-text-secondary);
+    }
+
+    &:focus {
+      border-color: #d04a02;
+    }
+  }
+
+  // ── Skeleton loader ───────────────────────────────────────────────────────
+  &__loading {
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__skeleton {
+    height:        56px;
+    background:    var(--app-bg-hover);
+    border-radius: 8px;
+    animation:     pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+
+  // ── Conversation list ─────────────────────────────────────────────────────
+  &__list {
+    flex:       1;
+    overflow-y: auto;
+    padding:    0.25rem 0.5rem;
+    margin:     0;
+    list-style: none;
+
+    // Custom scrollbar
+    &::-webkit-scrollbar       { width: 4px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb {
+      background:    var(--app-border);
+      border-radius: 2px;
+    }
+  }
+
+  // ── Conversation item ─────────────────────────────────────────────────────
+  &__item {
+    display:       flex;
+    align-items:   center;
+    gap:           0.5rem;
+    padding:       0.6rem 0.75rem;
+    border-radius: 8px;
+    cursor:        pointer;
+    margin-bottom: 2px;
+    transition:    background 0.15s ease;
+    position:      relative;
+    min-height:    52px;
+
+    &:hover {
+      background: var(--app-bg-hover);
+
+      .sidebar__delete-btn {
+        opacity: 1;
+      }
+    }
+
+    &--active {
+      background: var(--app-bg-hover);
+      border-left: 3px solid #d04a02;
+      padding-left: calc(0.75rem - 3px);
+    }
+
+    &--confirm {
+      background: var(--app-bg-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #d04a02;
+      outline-offset: -2px;
+    }
+  }
+
+  &__item-content {
+    flex:     1;
+    overflow: hidden;
+  }
+
+  &__item-top {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             0.5rem;
+    margin-bottom:   2px;
+  }
+
+  &__item-title {
+    font-size:     0.875rem;
+    font-weight:   500;
+    color:         var(--app-text-primary);
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    flex:          1;
+  }
+
+  &__item-time {
+    font-size:  0.7rem;
+    color:      var(--app-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  &__item-preview {
+    font-size:     0.78rem;
+    color:         var(--app-text-secondary);
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    margin:        0;
+    line-height:   1.4;
+  }
+
+  // ── Delete button ─────────────────────────────────────────────────────────
+  &__delete-btn {
+    background:  none;
+    border:      none;
+    cursor:      pointer;
+    color:       var(--app-text-secondary);
+    padding:     0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size:   0.75rem;
+    opacity:     0;
+    flex-shrink: 0;
+    transition:  opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      color:      #e53e3e;
+      background: rgba(229, 62, 62, 0.1);
+    }
+  }
+
+  // ── Inline delete confirmation ────────────────────────────────────────────
+  &__confirm {
+    flex:            1;
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             0.5rem;
+  }
+
+  &__confirm-text {
+    font-size:  0.8rem;
+    color:      var(--app-text-primary);
+    font-weight: 500;
+  }
+
+  &__confirm-actions {
+    display: flex;
+    gap:     0.4rem;
+  }
+
+  &__confirm-btn {
+    padding:       0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size:     0.78rem;
+    font-weight:   500;
+    border:        none;
+    cursor:        pointer;
+    transition:    background 0.15s ease;
+
+    &--danger {
+      background: #e53e3e;
+      color:      #ffffff;
+
+      &:hover { background: #c53030; }
+    }
+
+    &--cancel {
+      background: var(--app-bg-hover);
+      color:      var(--app-text-primary);
+
+      &:hover { background: var(--app-border); }
+    }
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  &__empty {
+    padding:    2rem 1rem;
+    text-align: center;
+    color:      var(--app-text-secondary);
+    font-size:  0.85rem;
+    list-style: none;
+  }
+}

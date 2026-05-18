@@ -1,0 +1,17 @@
+<!-- src/app/chat/components/chat-shell/chat-shell.component.html -->
+
+<div class="chat-shell" [class.sidebar-collapsed]="store.sidebarCollapsed()">
+
+  <!-- Sidebar -->
+  <aside class="chat-shell__sidebar">
+    <app-sidebar />
+  </aside>
+
+  <!-- Main area — chat window goes here in Step 4 -->
+  <main class="chat-shell__main">
+    <div class="chat-shell__placeholder">
+      <p>Select a conversation or start a new one</p>
+    </div>
+  </main>
+
+</div>
