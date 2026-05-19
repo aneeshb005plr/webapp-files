@@ -127,7 +127,12 @@ export function withChatStreaming() {
             const d       = event.data as unknown as DoneData;
             const content = store.streamingContent();
             patchState(store, streamingInitialState);
-            return { type: 'done', content, ticketUrl: d.ticket_url };
+            return {
+              type:      'done',
+              content,
+              ticketUrl: d.ticket_url,
+              messageId: d.message_id,   // real backend message_id for reactions
+            };
           }
 
           case 'error': {

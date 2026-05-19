@@ -207,6 +207,120 @@
     flex-shrink:   0;
   }
 
+  // ── Citations ─────────────────────────────────────────────────────────────
+  &__citations {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.4rem;
+  }
+
+  &__citations-toggle {
+    display:       flex;
+    align-items:   center;
+    gap:           0.4rem;
+    background:    none;
+    border:        1px solid var(--app-border);
+    border-radius: 6px;
+    padding:       0.35rem 0.7rem;
+    cursor:        pointer;
+    font-size:     0.75rem;
+    color:         var(--app-text-secondary);
+    font-family:   inherit;
+    transition:    border-color 0.15s ease, color 0.15s ease;
+    width:         fit-content;
+
+    &:hover {
+      border-color: #d04a02;
+      color:        #d04a02;
+    }
+  }
+
+  &__citations-icon { font-size: 0.8rem; }
+
+  &__citations-chevron {
+    font-size:   0.65rem;
+    margin-left: 0.2rem;
+    opacity:     0.6;
+  }
+
+  &__citations-list {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.3rem;
+    animation:      fade-in 0.2s ease;
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  }
+
+  &__citation-item {
+    display:         flex;
+    align-items:     center;
+    gap:             0.5rem;
+    padding:         0.4rem 0.65rem;
+    background:      var(--app-bg);
+    border:          1px solid var(--app-border);
+    border-radius:   6px;
+    text-decoration: none;
+    transition:      border-color 0.15s ease, background 0.15s ease;
+    max-width:       480px;
+
+    &:hover { border-color: #d04a02; background: var(--app-bg-hover); }
+  }
+
+  &__citation-num {
+    width:         20px;
+    height:        20px;
+    min-width:     20px;
+    border-radius: 50%;
+    background:    #d04a02;
+    color:         white;
+    font-size:     0.65rem;
+    font-weight:   700;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+  }
+
+  &__citation-info {
+    flex:    1;
+    display: flex;
+    flex-direction: column;
+    gap:     2px;
+    min-width: 0;
+  }
+
+  &__citation-name {
+    font-size:     0.75rem;
+    font-weight:   500;
+    color:         var(--app-text-primary);
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__citation-app {
+    font-size:     0.65rem;
+    color:         var(--app-text-secondary);
+    background:    var(--app-bg-hover);
+    border-radius: 3px;
+    padding:       1px 5px;
+    width:         fit-content;
+  }
+
+  &__citation-score {
+    font-size: 0.65rem;
+    color:     #22c55e;
+  }
+
+  &__citation-link {
+    font-size:   0.8rem;
+    color:       var(--app-text-secondary);
+    flex-shrink: 0;
+  }
+
   // ── Action buttons ────────────────────────────────────────────────────────
   &__actions {
     display:     flex;
