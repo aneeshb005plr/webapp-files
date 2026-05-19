@@ -266,6 +266,56 @@
     }
   }
 
+  // ── Markdown elements ────────────────────────────────────────────────────
+  &__inline-link {
+    color:           #d04a02;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    &:hover { color: #b53d00; }
+  }
+
+  &__para {
+    margin: 0 0 0.6em;
+    &:last-child { margin-bottom: 0; }
+  }
+
+  &__h1, &__h2, &__h3 {
+    font-weight:   600;
+    margin:        0.6em 0 0.3em;
+    color:         var(--app-text-primary);
+    line-height:   1.3;
+  }
+
+  &__h1 { font-size: 1.1rem; }
+  &__h2 { font-size: 1rem; }
+  &__h3 { font-size: 0.9rem; }
+
+  &__list {
+    margin:      0.4em 0;
+    padding-left: 1.25rem;
+
+    li {
+      margin-bottom: 0.25em;
+      line-height:   1.5;
+    }
+  }
+
+  &__code-inline {
+    background:    var(--app-bg-hover);
+    border:        1px solid var(--app-border);
+    border-radius: 4px;
+    padding:       0.1em 0.35em;
+    font-size:     0.82em;
+    font-family:   'Consolas', 'Monaco', monospace;
+    color:         #d04a02;
+  }
+
+  &__hr {
+    border:        none;
+    border-top:    1px solid var(--app-border);
+    margin:        0.75em 0;
+  }
+
   // ── Streaming state ───────────────────────────────────────────────────────
   &--streaming {
     .bubble__markdown {

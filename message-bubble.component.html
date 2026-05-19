@@ -7,116 +7,96 @@
   [class.bubble--streaming]="isStreaming()"
 >
 
-  <!-- Avatar -->
+  <!-- ── ASSISTANT layout: [avatar] [content] ─────────────────────────── -->
   @if (message().role === 'assistant') {
+
     <div class="bubble__avatar" aria-hidden="true">
       <span class="bubble__avatar-icon">✦</span>
     </div>
-  }
 
-  <!-- Content area -->
-  <div class="bubble__content">
-
-    <!-- Message text -->
-    <div class="bubble__text">
-      @if (message().role === 'assistant') {
-        <!-- Rendered HTML for assistant — basic markdown -->
-        <div
-          class="bubble__markdown"
-          [innerHTML]="formattedContent"
-        ></div>
-
-        <!-- Streaming cursor -->
+    <div class="bubble__content">
+      <div class="bubble__text">
+        <div class="bubble__markdown" [innerHTML]="formattedContent"></div>
         @if (isStreaming()) {
           <span class="bubble__cursor" aria-hidden="true"></span>
         }
-      } @else {
-        <!-- Plain text for user -->
-        <p class="bubble__user-text">{{ message().content }}</p>
+      </div>
+
+      @if (message().ticket_url) {
+        <a
+          class="bubble__ticket-link"
+          [href]="message().ticket_url!"
+          target="_blank"
+          rel="noopener noreferrer"
+        >🎫 Raise a Support Ticket</a>
       }
-    </div>
 
-    <!-- Ticket link — ServiceNow -->
-    @if (message().ticket_url) {
-      <a
-        class="bubble__ticket-link"
-        [href]="message().ticket_url!"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Raise a ServiceNow ticket"
-      >
-        🎫 Raise a Support Ticket
-      </a>
-    }
-
-    <!-- Sources -->
-    @if (message().sources && message().sources!.length > 0) {
-      <button
-        class="bubble__sources-toggle"
-        (click)="toggleSources()"
-        [attr.aria-expanded]="showSources()"
-      >
-        {{ showSources() ? '▲' : '▼' }}
-        {{ message().sources!.length }} source{{ message().sources!.length > 1 ? 's' : '' }}
-      </button>
-
-      @if (showSources()) {
-        <div class="bubble__sources">
-          @for (source of message().sources!; track source.source_url) {
-            <a
-              class="bubble__source-item"
-              [href]="source.source_url || '#'"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span class="bubble__source-icon">📄</span>
-              <span class="bubble__source-name">{{ source.file_name }}</span>
-              @if (source.application) {
-                <span class="bubble__source-app">{{ source.application }}</span>
-              }
-            </a>
-          }
-        </div>
-      }
-    }
-
-    <!-- Actions — copy + reactions (assistant only) -->
-    @if (message().role === 'assistant' && !isStreaming()) {
-      <div class="bubble__actions" role="group" aria-label="Message actions">
-
+      @if (message().sources && message().sources!.length > 0) {
         <button
-          class="bubble__action-btn"
-          (click)="copyMessage()"
-          [title]="copied() ? 'Copied!' : 'Copy message'"
-          [class.bubble__action-btn--active]="copied()"
-          aria-label="Copy message"
+          class="bubble__sources-toggle"
+          (click)="toggleSources()"
+          [attr.aria-expanded]="showSources()"
         >
-          {{ copied() ? '✓' : '⎘' }}
+          {{ showSources() ? '▲' : '▼' }}
+          {{ message().sources!.length }} source{{ message().sources!.length > 1 ? 's' : '' }}
         </button>
 
-        <button
-          class="bubble__action-btn"
-          [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_up'"
-          (click)="setReaction('thumbs_up')"
-          title="Helpful"
-          aria-label="Mark as helpful"
-        >👍</button>
+        @if (showSources()) {
+          <div class="bubble__sources">
+            @for (source of message().sources!; track source.source_url) {
+              <a
+                class="bubble__source-item"
+                [href]="source.source_url || '#'"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="bubble__source-icon">📄</span>
+                <span class="bubble__source-name">{{ source.file_name }}</span>
+                @if (source.application) {
+                  <span class="bubble__source-app">{{ source.application }}</span>
+                }
+              </a>
+            }
+          </div>
+        }
+      }
 
-        <button
-          class="bubble__action-btn"
-          [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_down'"
-          (click)="setReaction('thumbs_down')"
-          title="Not helpful"
-          aria-label="Mark as not helpful"
-        >👎</button>
+      @if (!isStreaming()) {
+        <div class="bubble__actions" role="group" aria-label="Message actions">
+          <button
+            class="bubble__action-btn"
+            (click)="copyMessage()"
+            [title]="copied() ? 'Copied!' : 'Copy'"
+            [class.bubble__action-btn--active]="copied()"
+          >{{ copied() ? '✓' : '⎘' }}</button>
 
-      </div>
-    }
+          <button
+            class="bubble__action-btn"
+            [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_up'"
+            (click)="setReaction('thumbs_up')"
+            title="Helpful"
+          >👍</button>
 
-  </div>
+          <button
+            class="bubble__action-btn"
+            [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_down'"
+            (click)="setReaction('thumbs_down')"
+            title="Not helpful"
+          >👎</button>
+        </div>
+      }
+    </div>
+  }
 
-  <!-- User avatar -->
+  <!-- ── USER layout: [content] [You] — row-reverse makes You appear RIGHT ── -->
   @if (message().role === 'user') {
+
+    <!-- Content comes FIRST in DOM so row-reverse pushes it LEFT (appears right side) -->
+    <div class="bubble__content">
+      <p class="bubble__user-text">{{ message().content }}</p>
+    </div>
+
+    <!-- Avatar comes SECOND in DOM so row-reverse pushes it RIGHT ✅ -->
     <div class="bubble__user-avatar" aria-hidden="true">You</div>
   }
 
