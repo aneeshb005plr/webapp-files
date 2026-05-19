@@ -1,0 +1,65 @@
+// thinking-indicator.component.scss
+
+.thinking {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.35rem;
+  padding:        0.75rem 1rem;
+  max-width:      480px;
+
+  &__event {
+    display:     flex;
+    align-items: center;
+    gap:         0.5rem;
+    font-size:   0.8rem;
+    line-height: 1.4;
+    transition:  opacity 0.2s ease;
+
+    &--done {
+      opacity: 0.45;
+      color:   var(--app-text-secondary);
+    }
+
+    &--active {
+      opacity: 1;
+      color:   var(--app-text-primary);
+      font-weight: 500;
+    }
+  }
+
+  &__event-icon {
+    font-size:   0.85rem;
+    flex-shrink: 0;
+    width:       18px;
+    text-align:  center;
+  }
+
+  &__event-label {
+    flex: 1;
+  }
+
+  // Animated dots
+  &__dots {
+    display:     flex;
+    align-items: center;
+    gap:         3px;
+    margin-left: 2px;
+
+    span {
+      width:         4px;
+      height:        4px;
+      border-radius: 50%;
+      background:    #d04a02;
+      animation:     dot-bounce 1.2s ease-in-out infinite;
+
+      &:nth-child(1) { animation-delay: 0s; }
+      &:nth-child(2) { animation-delay: 0.2s; }
+      &:nth-child(3) { animation-delay: 0.4s; }
+    }
+  }
+
+  @keyframes dot-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%            { transform: translateY(-4px); opacity: 1; }
+  }
+}

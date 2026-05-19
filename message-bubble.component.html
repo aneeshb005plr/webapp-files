@@ -1,0 +1,123 @@
+<!-- message-bubble.component.html -->
+
+<div
+  class="bubble"
+  [class.bubble--user]="message().role === 'user'"
+  [class.bubble--assistant]="message().role === 'assistant'"
+  [class.bubble--streaming]="isStreaming()"
+>
+
+  <!-- Avatar -->
+  @if (message().role === 'assistant') {
+    <div class="bubble__avatar" aria-hidden="true">
+      <span class="bubble__avatar-icon">✦</span>
+    </div>
+  }
+
+  <!-- Content area -->
+  <div class="bubble__content">
+
+    <!-- Message text -->
+    <div class="bubble__text">
+      @if (message().role === 'assistant') {
+        <!-- Rendered HTML for assistant — basic markdown -->
+        <div
+          class="bubble__markdown"
+          [innerHTML]="formattedContent"
+        ></div>
+
+        <!-- Streaming cursor -->
+        @if (isStreaming()) {
+          <span class="bubble__cursor" aria-hidden="true"></span>
+        }
+      } @else {
+        <!-- Plain text for user -->
+        <p class="bubble__user-text">{{ message().content }}</p>
+      }
+    </div>
+
+    <!-- Ticket link — ServiceNow -->
+    @if (message().ticket_url) {
+      <a
+        class="bubble__ticket-link"
+        [href]="message().ticket_url!"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Raise a ServiceNow ticket"
+      >
+        🎫 Raise a Support Ticket
+      </a>
+    }
+
+    <!-- Sources -->
+    @if (message().sources && message().sources!.length > 0) {
+      <button
+        class="bubble__sources-toggle"
+        (click)="toggleSources()"
+        [attr.aria-expanded]="showSources()"
+      >
+        {{ showSources() ? '▲' : '▼' }}
+        {{ message().sources!.length }} source{{ message().sources!.length > 1 ? 's' : '' }}
+      </button>
+
+      @if (showSources()) {
+        <div class="bubble__sources">
+          @for (source of message().sources!; track source.source_url) {
+            <a
+              class="bubble__source-item"
+              [href]="source.source_url || '#'"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="bubble__source-icon">📄</span>
+              <span class="bubble__source-name">{{ source.file_name }}</span>
+              @if (source.application) {
+                <span class="bubble__source-app">{{ source.application }}</span>
+              }
+            </a>
+          }
+        </div>
+      }
+    }
+
+    <!-- Actions — copy + reactions (assistant only) -->
+    @if (message().role === 'assistant' && !isStreaming()) {
+      <div class="bubble__actions" role="group" aria-label="Message actions">
+
+        <button
+          class="bubble__action-btn"
+          (click)="copyMessage()"
+          [title]="copied() ? 'Copied!' : 'Copy message'"
+          [class.bubble__action-btn--active]="copied()"
+          aria-label="Copy message"
+        >
+          {{ copied() ? '✓' : '⎘' }}
+        </button>
+
+        <button
+          class="bubble__action-btn"
+          [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_up'"
+          (click)="setReaction('thumbs_up')"
+          title="Helpful"
+          aria-label="Mark as helpful"
+        >👍</button>
+
+        <button
+          class="bubble__action-btn"
+          [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_down'"
+          (click)="setReaction('thumbs_down')"
+          title="Not helpful"
+          aria-label="Mark as not helpful"
+        >👎</button>
+
+      </div>
+    }
+
+  </div>
+
+  <!-- User avatar -->
+  @if (message().role === 'user') {
+    <div class="bubble__user-avatar" aria-hidden="true">You</div>
+  }
+
+</div>

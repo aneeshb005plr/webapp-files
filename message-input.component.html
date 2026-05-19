@@ -1,0 +1,69 @@
+<!-- message-input.component.html -->
+
+<div class="input-area">
+  <div
+    class="input-area__box"
+    [class.input-area__box--focused]="message().length > 0"
+  >
+    <textarea
+      #textarea
+      class="input-area__textarea"
+      [value]="message()"
+      (input)="onInput($event)"
+      (keydown)="onKeyDown($event)"
+      [disabled]="store.isStreaming()"
+      [attr.aria-label]="'Type your message'"
+      placeholder="Ask a question about your IT issue..."
+      rows="1"
+      maxlength="2500"
+    ></textarea>
+
+    <div class="input-area__footer">
+
+      <!-- Character count — shown when approaching limit -->
+      @if (charCount > 1500) {
+        <span
+          class="input-area__char-count"
+          [class.input-area__char-count--warning]="isOverLimit"
+        >
+          {{ charCount }}/2000
+        </span>
+      } @else {
+        <span class="input-area__hint">
+          Enter to send · Shift+Enter for new line
+        </span>
+      }
+
+      <!-- Stop button — visible only when streaming -->
+      @if (store.isStreaming()) {
+        <button
+          class="input-area__stop-btn"
+          (click)="stop()"
+          aria-label="Stop generating response"
+          title="Stop"
+        >
+          <span class="input-area__stop-icon">■</span>
+          Stop
+        </button>
+      }
+
+      <!-- Send button -->
+      @if (!store.isStreaming()) {
+        <button
+          class="input-area__send-btn"
+          (click)="send()"
+          [disabled]="!store.canSend() || !message().trim() || isOverLimit"
+          aria-label="Send message"
+          title="Send"
+        >
+          <span class="input-area__send-icon">↑</span>
+        </button>
+      }
+
+    </div>
+  </div>
+
+  <p class="input-area__disclaimer">
+    NextGenAMS may make mistakes. Verify critical information with your IT team.
+  </p>
+</div>

@@ -130,6 +130,27 @@
     }
   }
 
+  // ── Empty state CTA ──────────────────────────────────────────────────────
+  &__empty-btn {
+    margin-top:    0.5rem;
+    padding:       0.65rem 1.5rem;
+    background:    #d04a02;
+    color:         white;
+    border:        none;
+    border-radius: 8px;
+    font-size:     0.875rem;
+    font-weight:   600;
+    cursor:        pointer;
+    font-family:   inherit;
+    transition:    background 0.15s ease, box-shadow 0.15s ease;
+    box-shadow:    0 2px 8px rgba(208, 74, 2, 0.25);
+
+    &:hover {
+      background:  #b53d00;
+      box-shadow:  0 4px 12px rgba(208, 74, 2, 0.35);
+    }
+  }
+
   // ── Mobile ────────────────────────────────────────────────────────────────
   @media (max-width: 768px) {
 

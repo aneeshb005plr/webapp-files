@@ -1,0 +1,154 @@
+// message-input.component.scss
+
+.input-area {
+  padding:     0.75rem 1rem 0.5rem;
+  flex-shrink: 0;
+  background:  var(--app-bg);
+
+  &__box {
+    background:    var(--app-bg-container);
+    border:        1px solid var(--app-border);
+    border-radius: 12px;
+    box-shadow:    0 2px 12px rgba(0, 0, 0, 0.06);
+    transition:    border-color 0.2s ease, box-shadow 0.2s ease;
+    overflow:      hidden;
+
+    &:focus-within {
+      border-color: #d04a02;
+      box-shadow:   0 2px 16px rgba(208, 74, 2, 0.12);
+    }
+  }
+
+  &__textarea {
+    width:        100%;
+    padding:      0.85rem 1rem 0;
+    background:   transparent;
+    border:       none;
+    outline:      none;
+    resize:       none;
+    color:        var(--app-text-primary);
+    font-size:    0.9rem;
+    line-height:  1.6;
+    font-family:  inherit;
+    min-height:   48px;
+    max-height:   200px;
+    box-sizing:   border-box;
+    overflow-y:   auto;
+
+    &::placeholder {
+      color: var(--app-text-secondary);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor:  not-allowed;
+    }
+
+    &::-webkit-scrollbar       { width: 3px; }
+    &::-webkit-scrollbar-thumb { background: var(--app-border); border-radius: 2px; }
+  }
+
+  &__footer {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    padding:         0.4rem 0.75rem 0.6rem;
+    gap:             0.5rem;
+  }
+
+  &__hint {
+    font-size: 0.7rem;
+    color:     var(--app-text-secondary);
+    flex:      1;
+  }
+
+  &__char-count {
+    font-size: 0.7rem;
+    color:     var(--app-text-secondary);
+    flex:      1;
+
+    &--warning {
+      color: #e53e3e;
+    }
+  }
+
+  // Stop button
+  &__stop-btn {
+    display:       flex;
+    align-items:   center;
+    gap:           0.35rem;
+    padding:       0.4rem 0.85rem;
+    background:    var(--app-bg-hover);
+    border:        1px solid var(--app-border);
+    border-radius: 8px;
+    color:         var(--app-text-primary);
+    font-size:     0.8rem;
+    font-weight:   500;
+    cursor:        pointer;
+    font-family:   inherit;
+    transition:    background 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      background:   var(--app-border);
+      border-color: var(--app-text-secondary);
+    }
+  }
+
+  &__stop-icon {
+    font-size: 0.6rem;
+    color:     #e53e3e;
+  }
+
+  // Send button
+  &__send-btn {
+    width:         36px;
+    height:        36px;
+    border-radius: 8px;
+    background:    #d04a02;
+    border:        none;
+    cursor:        pointer;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    transition:    background 0.15s ease,
+                   transform 0.1s ease,
+                   box-shadow 0.15s ease;
+    box-shadow:    0 2px 8px rgba(208, 74, 2, 0.25);
+    flex-shrink:   0;
+
+    &:hover:not(:disabled) {
+      background:  #b53d00;
+      box-shadow:  0 4px 12px rgba(208, 74, 2, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    &:disabled {
+      background: var(--app-bg-hover);
+      box-shadow: none;
+      cursor:     not-allowed;
+
+      .input-area__send-icon {
+        color: var(--app-text-secondary);
+      }
+    }
+  }
+
+  &__send-icon {
+    color:       white;
+    font-size:   1rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  // Disclaimer
+  &__disclaimer {
+    text-align: center;
+    font-size:  0.68rem;
+    color:      var(--app-text-secondary);
+    margin:     0.4rem 0 0;
+    opacity:    0.7;
+  }
+}

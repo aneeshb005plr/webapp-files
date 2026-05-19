@@ -1,0 +1,266 @@
+// message-bubble.component.scss
+
+.bubble {
+  display:    flex;
+  gap:        0.75rem;
+  padding:    0.25rem 0;
+  max-width:  100%;
+  animation:  bubble-in 0.25s ease-out;
+
+  @keyframes bubble-in {
+    from {
+      opacity:   0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity:   1;
+      transform: translateY(0);
+    }
+  }
+
+  // ── Avatar ────────────────────────────────────────────────────────────────
+  &__avatar {
+    width:         32px;
+    height:        32px;
+    border-radius: 8px;
+    background:    linear-gradient(135deg, #d04a02, #ff8c42);
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    flex-shrink:   0;
+    margin-top:    2px;
+    box-shadow:    0 2px 8px rgba(208, 74, 2, 0.2);
+  }
+
+  &__avatar-icon {
+    color:     white;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  &__user-avatar {
+    width:         32px;
+    height:        32px;
+    border-radius: 8px;
+    background:    var(--app-bg-hover);
+    border:        1px solid var(--app-border);
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    flex-shrink:   0;
+    margin-top:    2px;
+    font-size:     0.65rem;
+    font-weight:   600;
+    color:         var(--app-text-secondary);
+  }
+
+  // ── Content ───────────────────────────────────────────────────────────────
+  &__content {
+    flex:     1;
+    min-width: 0;
+    display:   flex;
+    flex-direction: column;
+    gap:       0.4rem;
+  }
+
+  &__text {
+    position: relative;
+    display:  inline-block;
+    max-width: 100%;
+  }
+
+  // ── Assistant message ─────────────────────────────────────────────────────
+  &--assistant {
+    align-items: flex-start;
+
+    .bubble__markdown {
+      font-size:   0.875rem;
+      line-height: 1.7;
+      color:       var(--app-text-primary);
+
+      strong { font-weight: 600; }
+      em     { font-style: italic; }
+
+      code {
+        background:    var(--app-bg-hover);
+        border:        1px solid var(--app-border);
+        border-radius: 4px;
+        padding:       0.1em 0.35em;
+        font-size:     0.82em;
+        font-family:   'Consolas', 'Monaco', monospace;
+        color:         #d04a02;
+      }
+    }
+  }
+
+  // ── User message ──────────────────────────────────────────────────────────
+  &--user {
+    flex-direction: row-reverse;
+    align-items:    flex-start;
+
+    .bubble__content {
+      align-items: flex-end;
+    }
+
+    .bubble__user-text {
+      background:    #d04a02;
+      color:         #ffffff;
+      padding:       0.65rem 0.9rem;
+      border-radius: 12px 12px 4px 12px;
+      font-size:     0.875rem;
+      line-height:   1.6;
+      margin:        0;
+      box-shadow:    0 2px 8px rgba(208, 74, 2, 0.2);
+      max-width:     520px;
+      word-wrap:     break-word;
+    }
+  }
+
+  // ── Streaming cursor ──────────────────────────────────────────────────────
+  &__cursor {
+    display:       inline-block;
+    width:         2px;
+    height:        1em;
+    background:    #d04a02;
+    margin-left:   2px;
+    vertical-align: middle;
+    animation:     cursor-blink 0.8s ease-in-out infinite;
+
+    @keyframes cursor-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+  }
+
+  // ── ServiceNow ticket link ────────────────────────────────────────────────
+  &__ticket-link {
+    display:       inline-flex;
+    align-items:   center;
+    gap:           0.4rem;
+    padding:       0.45rem 0.85rem;
+    background:    transparent;
+    border:        1px solid #d04a02;
+    border-radius: 6px;
+    color:         #d04a02;
+    font-size:     0.8rem;
+    font-weight:   500;
+    text-decoration: none;
+    transition:    background 0.15s ease, color 0.15s ease;
+    width:         fit-content;
+
+    &:hover {
+      background: #d04a02;
+      color:      white;
+    }
+  }
+
+  // ── Sources ───────────────────────────────────────────────────────────────
+  &__sources-toggle {
+    background:  none;
+    border:      none;
+    cursor:      pointer;
+    color:       var(--app-text-secondary);
+    font-size:   0.75rem;
+    padding:     0;
+    display:     flex;
+    align-items: center;
+    gap:         0.3rem;
+    font-family: inherit;
+
+    &:hover { color: var(--app-text-primary); }
+  }
+
+  &__sources {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.3rem;
+    padding:        0.5rem 0;
+  }
+
+  &__source-item {
+    display:       flex;
+    align-items:   center;
+    gap:           0.4rem;
+    padding:       0.35rem 0.6rem;
+    background:    var(--app-bg);
+    border:        1px solid var(--app-border);
+    border-radius: 6px;
+    text-decoration: none;
+    transition:    border-color 0.15s ease;
+    max-width:     360px;
+
+    &:hover {
+      border-color: #d04a02;
+    }
+  }
+
+  &__source-icon {
+    font-size:   0.8rem;
+    flex-shrink: 0;
+  }
+
+  &__source-name {
+    font-size:     0.75rem;
+    color:         var(--app-text-primary);
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    flex:          1;
+  }
+
+  &__source-app {
+    font-size:     0.65rem;
+    color:         var(--app-text-secondary);
+    background:    var(--app-bg-hover);
+    padding:       0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space:   nowrap;
+    flex-shrink:   0;
+  }
+
+  // ── Action buttons ────────────────────────────────────────────────────────
+  &__actions {
+    display:     flex;
+    align-items: center;
+    gap:         0.2rem;
+    opacity:     0;
+    transition:  opacity 0.15s ease;
+  }
+
+  &:hover &__actions {
+    opacity: 1;
+  }
+
+  &__action-btn {
+    background:    none;
+    border:        none;
+    cursor:        pointer;
+    padding:       0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size:     0.8rem;
+    color:         var(--app-text-secondary);
+    transition:    background 0.15s ease, color 0.15s ease;
+    font-family:   inherit;
+
+    &:hover {
+      background: var(--app-bg-hover);
+      color:      var(--app-text-primary);
+    }
+
+    &--active {
+      color: #d04a02;
+    }
+
+    &--reaction-active {
+      opacity: 1;
+      filter:  saturate(1);
+    }
+  }
+
+  // ── Streaming state ───────────────────────────────────────────────────────
+  &--streaming {
+    .bubble__markdown {
+      opacity: 0.95;
+    }
+  }
+}

@@ -1,0 +1,34 @@
+<!-- thinking-indicator.component.html -->
+@if (isVisible()) {
+  <div class="thinking" role="status" aria-live="polite" aria-label="Agent is processing">
+
+    <!-- Previous events -->
+    @for (event of events().slice(0, -1); track $index) {
+      <div class="thinking__event thinking__event--done">
+        <span class="thinking__event-icon">{{ getEventIcon(event) }}</span>
+        <span class="thinking__event-label">{{ getEventLabel(event) }}</span>
+      </div>
+    }
+
+    <!-- Latest / active event -->
+    @if (latestEvent) {
+      <div class="thinking__event thinking__event--active">
+        <span class="thinking__event-icon">{{ getEventIcon(latestEvent) }}</span>
+        <span class="thinking__event-label">{{ getEventLabel(latestEvent) }}</span>
+        <span class="thinking__dots">
+          <span></span><span></span><span></span>
+        </span>
+      </div>
+    } @else {
+      <!-- Initial state — no events yet -->
+      <div class="thinking__event thinking__event--active">
+        <span class="thinking__event-icon">🧠</span>
+        <span class="thinking__event-label">Thinking</span>
+        <span class="thinking__dots">
+          <span></span><span></span><span></span>
+        </span>
+      </div>
+    }
+
+  </div>
+}

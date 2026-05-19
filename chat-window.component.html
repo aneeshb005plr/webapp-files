@@ -1,0 +1,106 @@
+<!-- chat-window.component.html -->
+
+<div class="chat-window">
+
+  <!-- Header bar -->
+  <div class="chat-window__header">
+    <div class="chat-window__header-info">
+      <span class="chat-window__header-dot"></span>
+      <h2 class="chat-window__title">
+        {{ store.activeConversation()?.title ?? 'New Conversation' }}
+      </h2>
+    </div>
+    <div class="chat-window__header-meta">
+      @if (store.activeConversation()?.message_count) {
+        <span class="chat-window__message-count">
+          {{ store.activeConversation()!.message_count }} messages
+        </span>
+      }
+    </div>
+  </div>
+
+  <!-- Messages area -->
+  <div
+    class="chat-window__messages"
+    (scroll)="onScroll($event)"
+    role="log"
+    aria-live="polite"
+    aria-label="Conversation messages"
+  >
+
+    <!-- Load more -->
+    @if (store.hasMoreMessages()) {
+      <div class="chat-window__load-more">
+        <button
+          class="chat-window__load-more-btn"
+          (click)="onLoadMore()"
+          [disabled]="store.isLoadingMessages()"
+        >
+          {{ store.isLoadingMessages() ? 'Loading...' : '↑ Load earlier messages' }}
+        </button>
+      </div>
+    }
+
+    <!-- Loading messages skeleton -->
+    @if (store.isLoadingMessages() && store.messages().length === 0) {
+      <div class="chat-window__skeleton-wrap">
+        <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
+        <div class="chat-window__skeleton chat-window__skeleton--user"></div>
+        <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
+      </div>
+    }
+
+    <!-- Starter prompts — empty conversation -->
+    @if (store.isEmptyConversation() && !store.isStreaming()) {
+      <app-starter-prompts (promptSelected)="onStarterPrompt($event)" />
+    }
+
+    <!-- Messages -->
+    @for (msg of store.messages(); track msg.message_id) {
+      <app-message-bubble
+        [message]="msg"
+        [isStreaming]="false"
+      />
+    }
+
+    <!-- Streaming assistant message -->
+    @if (store.isStreaming() && store.streamingContent()) {
+      <app-message-bubble
+        [message]="{
+          message_id:      'streaming',
+          conversation_id: store.activeConversationId()!,
+          role:            'assistant',
+          content:         store.streamingContent(),
+          sources:         null,
+          ticket_url:      null,
+          reaction:        null,
+          created_at:      '',
+          isStreaming:     true
+        }"
+        [isStreaming]="true"
+      />
+    }
+
+    <!-- Thinking indicator -->
+    <app-thinking-indicator
+      [isVisible]="store.isStreaming() && !store.streamingContent()"
+      [events]="store.thinkingEvents()"
+    />
+
+    <!-- Error -->
+    @if (store.error()) {
+      <div class="chat-window__error" role="alert">
+        <span>⚠ {{ store.error() }}</span>
+        <button (click)="store.clearError()">✕</button>
+      </div>
+    }
+
+    <!-- Scroll anchor -->
+    <div #messagesEnd></div>
+
+  </div>
+
+  <!-- Message input -->
+  <app-message-input />
+
+</div>
