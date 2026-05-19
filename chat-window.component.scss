@@ -13,6 +13,7 @@
   flex-direction: column;
   height:         100%;
   overflow:       hidden;
+  position:       relative;   // needed for scroll-down button positioning
 
   // ── Header ────────────────────────────────────────────────────────────────
   &__header {
@@ -137,6 +138,40 @@
   @keyframes shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  // ── Scroll to bottom button ──────────────────────────────────────────────
+  &__scroll-down {
+    position:      absolute;
+    bottom:        90px;          // above input area
+    right:         1.5rem;
+    width:         36px;
+    height:        36px;
+    border-radius: 50%;
+    background:    var(--app-bg-container);
+    border:        1px solid var(--app-border);
+    box-shadow:    0 2px 8px var(--app-shadow);
+    cursor:        pointer;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    font-size:     1rem;
+    color:         var(--app-text-primary);
+    transition:    background 0.15s ease, box-shadow 0.15s ease;
+    z-index:       10;
+    animation:     fade-in 0.2s ease;
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    &:hover {
+      background:  #d04a02;
+      color:       white;
+      border-color: #d04a02;
+      box-shadow:  0 4px 12px rgba(208, 74, 2, 0.3);
+    }
   }
 
   // ── Error banner ──────────────────────────────────────────────────────────

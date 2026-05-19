@@ -7,6 +7,7 @@ import {
   ElementRef,
   inject,
   OnDestroy,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -25,6 +26,9 @@ export class MessageInputComponent implements AfterViewInit, OnDestroy {
 
   protected readonly store   = inject(ChatStore);
   protected readonly message = signal('');
+
+  // Emits when message sent so parent can scroll to bottom
+  readonly messageSent = output<void>();
 
   private readonly textareaRef =
     viewChild<ElementRef<HTMLTextAreaElement>>('textarea');
@@ -55,6 +59,7 @@ export class MessageInputComponent implements AfterViewInit, OnDestroy {
 
     this.store.sendMessage(text);
     this.message.set('');
+    this.messageSent.emit();
 
     // Reset textarea height
     const el = this.textareaRef()?.nativeElement;

@@ -2,7 +2,7 @@
 
 <div class="chat-window">
 
-  <!-- Header bar -->
+  <!-- Header -->
   <div class="chat-window__header">
     <div class="chat-window__header-info">
       <span class="chat-window__header-dot"></span>
@@ -19,16 +19,17 @@
     </div>
   </div>
 
-  <!-- Messages area -->
+  <!-- Messages scrollable area — ref used for scroll management -->
   <div
     class="chat-window__messages"
+    #scrollContainer
     (scroll)="onScroll($event)"
     role="log"
     aria-live="polite"
     aria-label="Conversation messages"
   >
 
-    <!-- Load more -->
+    <!-- Load more older messages -->
     @if (store.hasMoreMessages()) {
       <div class="chat-window__load-more">
         <button
@@ -36,12 +37,16 @@
           (click)="onLoadMore()"
           [disabled]="store.isLoadingMessages()"
         >
-          {{ store.isLoadingMessages() ? 'Loading...' : '↑ Load earlier messages' }}
+          @if (store.isLoadingMessages()) {
+            Loading...
+          } @else {
+            ↑ Load earlier messages
+          }
         </button>
       </div>
     }
 
-    <!-- Loading messages skeleton -->
+    <!-- Skeleton loading -->
     @if (store.isLoadingMessages() && store.messages().length === 0) {
       <div class="chat-window__skeleton-wrap">
         <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
@@ -50,12 +55,12 @@
       </div>
     }
 
-    <!-- Starter prompts — empty conversation -->
+    <!-- Starter prompts -->
     @if (store.isEmptyConversation() && !store.isStreaming()) {
       <app-starter-prompts (promptSelected)="onStarterPrompt($event)" />
     }
 
-    <!-- Messages -->
+    <!-- Messages list -->
     @for (msg of store.messages(); track msg.message_id) {
       <app-message-bubble
         [message]="msg"
@@ -74,8 +79,7 @@
           sources:         null,
           ticket_url:      null,
           reaction:        null,
-          created_at:      '',
-          isStreaming:     true
+          created_at:      ''
         }"
         [isStreaming]="true"
       />
@@ -87,7 +91,7 @@
       [events]="store.thinkingEvents()"
     />
 
-    <!-- Error -->
+    <!-- Error banner -->
     @if (store.error()) {
       <div class="chat-window__error" role="alert">
         <span class="chat-window__error-text">⚠ {{ store.error() }}</span>
@@ -99,12 +103,21 @@
       </div>
     }
 
-    <!-- Scroll anchor -->
-    <div #messagesEnd></div>
-
   </div>
 
+  <!-- Scroll to bottom button — shown when user has scrolled up -->
+  @if (showScrollDown()) {
+    <button
+      class="chat-window__scroll-down"
+      (click)="scrollToBottomClick()"
+      aria-label="Scroll to bottom"
+      title="Scroll to latest message"
+    >
+      ↓
+    </button>
+  }
+
   <!-- Message input -->
-  <app-message-input />
+  <app-message-input (messageSent)="forceScrollDown()" />
 
 </div>
