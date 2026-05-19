@@ -32,33 +32,48 @@
       }
 
       @if (message().sources && message().sources!.length > 0) {
-        <button
-          class="bubble__sources-toggle"
-          (click)="toggleSources()"
-          [attr.aria-expanded]="showSources()"
-        >
-          {{ showSources() ? '▲' : '▼' }}
-          {{ message().sources!.length }} source{{ message().sources!.length > 1 ? 's' : '' }}
-        </button>
+        <div class="bubble__citations">
+          <button
+            class="bubble__citations-toggle"
+            (click)="toggleSources()"
+            [attr.aria-expanded]="showSources()"
+          >
+            <span class="bubble__citations-icon">📚</span>
+            {{ showSources() ? 'Hide' : 'Show' }}
+            {{ message().sources!.length }}
+            source{{ message().sources!.length > 1 ? 's' : '' }}
+            <span class="bubble__citations-chevron">{{ showSources() ? '▲' : '▼' }}</span>
+          </button>
 
-        @if (showSources()) {
-          <div class="bubble__sources">
-            @for (source of message().sources!; track source.source_url) {
-              <a
-                class="bubble__source-item"
-                [href]="source.source_url || '#'"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span class="bubble__source-icon">📄</span>
-                <span class="bubble__source-name">{{ source.file_name }}</span>
-                @if (source.application) {
-                  <span class="bubble__source-app">{{ source.application }}</span>
-                }
-              </a>
-            }
-          </div>
-        }
+          @if (showSources()) {
+            <div class="bubble__citations-list">
+              @for (source of message().sources!; track $index) {
+                <a
+                  class="bubble__citation-item"
+                  [href]="source.source_url && source.source_url.startsWith('http') ? source.source_url : '#'"
+                  [target]="source.source_url ? '_blank' : '_self'"
+                  rel="noopener noreferrer"
+                >
+                  <span class="bubble__citation-num">{{ $index + 1 }}</span>
+                  <div class="bubble__citation-info">
+                    <span class="bubble__citation-name">{{ source.file_name }}</span>
+                    @if (source.application) {
+                      <span class="bubble__citation-app">{{ source.application }}</span>
+                    }
+                    @if (source.rerank_score) {
+                      <span class="bubble__citation-score">
+                        {{ (source.rerank_score * 100).toFixed(0) }}% match
+                      </span>
+                    }
+                  </div>
+                  @if (source.source_url && source.source_url.startsWith('http')) {
+                    <span class="bubble__citation-link">↗</span>
+                  }
+                </a>
+              }
+            </div>
+          }
+        </div>
       }
 
       @if (!isStreaming()) {
