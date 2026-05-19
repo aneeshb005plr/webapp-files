@@ -1,25 +1,23 @@
 // src/app/chat/store/features/streaming.feature.ts
-// Manages SSE streaming state — thinking events, streaming content, stop.
-// Pure state only — no methods (streaming logic in chat.store.ts coordinator
-// because it needs cross-feature access to messages + conversations).
+// Manages SSE streaming state.
+// Thinking events: replaces instead of appends for same-type/same-status events.
 
 import {
   patchState,
   signalStoreFeature,
   withMethods,
   withState,
-}                     from '@ngrx/signals';
+}                    from '@ngrx/signals';
 import {
   AgentThinkingData,
-  Message,
+  DoneData,
+  ErrorData,
   SseEvent,
   ThinkingEvent,
   TokenData,
   ToolCallData,
   ToolResultData,
-  DoneData,
-  ErrorData,
-}                     from '../../models/chat.models';
+}                    from '../../models/chat.models';
 
 export interface StreamingState {
   isStreaming:      boolean;
@@ -54,11 +52,6 @@ export function withChatStreaming() {
         });
       },
 
-      // Processes incoming SSE events and updates streaming state
-      // Returns:
-      //   { type: 'done', content, ticketUrl } when stream completes
-      //   { type: 'error', message }           when error occurs
-      //   null                                 for all other events (state updated internally)
       handleSseEvent(
         event: SseEvent
       ): { type: 'done'; content: string; ticketUrl: string | null }
@@ -69,21 +62,34 @@ export function withChatStreaming() {
 
           case 'agent_thinking': {
             const d = event.data as unknown as AgentThinkingData;
-            patchState(store, {
-              thinkingEvents: [
-                ...store.thinkingEvents(),
-                { type: 'agent_thinking', status: d.status, node: d.node },
-              ],
-            });
+            const current = store.thinkingEvents();
+
+            // Replace last event if it was also agent_thinking with same status
+            // Prevents "Processing..." appearing 3+ times
+            const lastEvent = current[current.length - 1];
+            const isSameStatus =
+              lastEvent?.type === 'agent_thinking' &&
+              lastEvent?.status === d.status;
+
+            const updated = isSameStatus
+              ? current  // same — don't add duplicate
+              : [...current, { type: 'agent_thinking' as const, status: d.status, node: d.node }];
+
+            patchState(store, { thinkingEvents: updated });
             return null;
           }
 
           case 'tool_call': {
             const d = event.data as unknown as ToolCallData;
+            // Replace any existing tool_call for same tool — avoid duplicates
+            const current    = store.thinkingEvents();
+            const withoutDup = current.filter(
+              e => !(e.type === 'tool_call' && e.tool === d.tool)
+            );
             patchState(store, {
               thinkingEvents: [
-                ...store.thinkingEvents(),
-                { type: 'tool_call', tool: d.tool, query: d.query },
+                ...withoutDup,
+                { type: 'tool_call' as const, tool: d.tool, query: d.query },
               ],
             });
             return null;
@@ -91,11 +97,19 @@ export function withChatStreaming() {
 
           case 'tool_result': {
             const d = event.data as unknown as ToolResultData;
+            // Replace the matching tool_call with tool_result
+            const current = store.thinkingEvents();
+            const updated  = current.map(e =>
+              e.type === 'tool_call' && e.tool === d.tool
+                ? { type: 'tool_result' as const, tool: d.tool, found: d.found }
+                : e
+            );
+            // Add if no matching tool_call found
+            const hasMatch = current.some(e => e.type === 'tool_call' && e.tool === d.tool);
             patchState(store, {
-              thinkingEvents: [
-                ...store.thinkingEvents(),
-                { type: 'tool_result', tool: d.tool, found: d.found },
-              ],
+              thinkingEvents: hasMatch
+                ? updated
+                : [...current, { type: 'tool_result' as const, tool: d.tool, found: d.found }],
             });
             return null;
           }
@@ -103,10 +117,7 @@ export function withChatStreaming() {
           case 'token': {
             const d = event.data as unknown as TokenData;
             patchState(store, {
-              // Clear thinking events when first token arrives
-              thinkingEvents:   store.thinkingEvents().length > 0
-                ? []
-                : store.thinkingEvents(),
+              thinkingEvents:   [],  // clear thinking when tokens arrive
               streamingContent: store.streamingContent() + d.token,
             });
             return null;

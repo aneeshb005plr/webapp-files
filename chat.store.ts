@@ -1,5 +1,4 @@
 // src/app/chat/store/chat.store.ts
-// Root store — composes all features, coordinates cross-feature logic.
 
 import { computed, inject }                   from '@angular/core';
 import {
@@ -31,6 +30,7 @@ export const ChatStore = signalStore(
   withProps(() => ({
     _chatService:        inject(ChatService),
     _streamSubscription: null as Subscription | null,
+    // _isStopped prevents stopped stream callbacks from affecting next message
     _isStopped:          false,
   })),
 
@@ -38,7 +38,6 @@ export const ChatStore = signalStore(
   withFeature(store => withChatMessages(store._chatService)),
   withChatStreaming(),
 
-  // ── Cross-feature computed ──────────────────────────────────────────────
   withComputed(store => ({
 
     filteredConversations: computed(() => {
@@ -60,25 +59,18 @@ export const ChatStore = signalStore(
     ),
   })),
 
-  // ── Cross-feature methods ───────────────────────────────────────────────
   withMethods(store => {
 
     const priv = () => store as unknown as StorePrivate;
 
-    function cancelExistingStream(): void {
-      const sub = priv()._streamSubscription;
-      if (sub && !sub.closed) sub.unsubscribe();
-      priv()._streamSubscription = null;
-      priv()._isStopped          = false;
-    }
-
+    // Saves assistant message and reloads title from backend
     function finaliseStream(
       conversationId: string,
       content:        string,
       ticketUrl:      string | null
     ): void {
       if (content.trim()) {
-        const assistantMessage: Message = {
+        const msg: Message = {
           message_id:      `streamed-${Date.now()}`,
           conversation_id: conversationId,
           role:            'assistant',
@@ -88,14 +80,11 @@ export const ChatStore = signalStore(
           reaction:        null,
           created_at:      new Date().toISOString(),
         };
-        store.appendAssistantMessage(assistantMessage);
+        store.appendAssistantMessage(msg);
         store.updateConversationMeta(conversationId, content);
       }
-
       store.stopStreamingState();
-
-      // Reload conversations to pick up backend-generated title update
-      // Small delay gives backend time to finish title generation
+      // Reload conversations after delay to pick up backend title generation
       setTimeout(() => store.loadConversations(), 1500);
     }
 
@@ -110,22 +99,30 @@ export const ChatStore = signalStore(
 
       createConversation(): void {
         store.createConversation({
-          onCreated: (conversationId: string) => {
+          onCreated: (id: string) => {
             store.resetMessages();
-            store.loadMessages(conversationId);
+            store.loadMessages(id);
           },
         });
       },
 
       sendMessage(message: string): void {
         const conversationId = store.activeConversationId();
-        if (!conversationId || store.isStreaming()) return;
+        if (!conversationId) return;
 
-        // Cancel any lingering stream before starting new one
-        cancelExistingStream();
+        // Guard — do not send if still streaming
+        if (store.isStreaming()) return;
+
+        // Clean up any previous subscription
+        const existingSub = priv()._streamSubscription;
+        if (existingSub && !existingSub.closed) existingSub.unsubscribe();
+        priv()._streamSubscription = null;
+
+        // Clear stopped flag for fresh stream
         priv()._isStopped = false;
 
-        const userMessage: Message = {
+        // Optimistic user message
+        store.appendMessage({
           message_id:      `temp-${Date.now()}`,
           conversation_id: conversationId,
           role:            'user',
@@ -134,15 +131,16 @@ export const ChatStore = signalStore(
           ticket_url:      null,
           reaction:        null,
           created_at:      new Date().toISOString(),
-        };
-        store.appendMessage(userMessage);
+        });
+
         store.startStreaming();
         store.clearError();
 
-        const subscription = store._chatService
+        const sub = store._chatService
           .streamMessage(conversationId, message)
           .subscribe({
             next: event => {
+              // Ignore events from a stopped stream
               if (priv()._isStopped) return;
 
               const result = store.handleSseEvent(event);
@@ -154,55 +152,57 @@ export const ChatStore = signalStore(
               }
 
               if (result.type === 'error') {
-                if (priv()._isStopped) return;
-                store.setError(result.message);
-                store.stopStreamingState();
+                if (!priv()._isStopped) {
+                  store.setError(result.message);
+                  store.stopStreamingState();
+                }
               }
             },
 
-            error: (err: Error) => {
-              if (priv()._isStopped) return;
-              console.error('Stream error:', err);
-              store.stopStreamingState();
-              store.setError('Connection error. Please try again.');
+            error: () => {
+              // Only show error if this stream was NOT manually stopped
+              if (!priv()._isStopped) {
+                store.stopStreamingState();
+                store.setError('Connection error. Please try again.');
+              }
               priv()._streamSubscription = null;
             },
 
             complete: () => {
+              // Ignore if manually stopped
               if (priv()._isStopped) return;
-              const content = store.streamingContent();
               if (store.isStreaming()) {
-                finaliseStream(conversationId, content, null);
+                finaliseStream(conversationId, store.streamingContent(), null);
               }
               priv()._streamSubscription = null;
             },
           });
 
-        priv()._streamSubscription = subscription;
+        priv()._streamSubscription = sub;
       },
 
       stopStreaming(): void {
         const conversationId = store.activeConversationId();
 
-        // Set flag FIRST — suppresses all pending callbacks
+        // Mark as stopped BEFORE unsubscribing
+        // This ensures error/complete callbacks are ignored
         priv()._isStopped = true;
 
-        // Cancel subscription
+        // Unsubscribe
         const sub = priv()._streamSubscription;
         if (sub && !sub.closed) sub.unsubscribe();
         priv()._streamSubscription = null;
 
-        // Tell backend to stop
+        // Tell backend
         if (conversationId) {
-          store._chatService.stopStreaming(conversationId).subscribe({
-            error: () => { /* ignore */ }
-          });
+          store._chatService.stopStreaming(conversationId)
+            .subscribe({ error: () => {} });
         }
 
-        // Save whatever was streamed so far
+        // Save partial content
         const content = store.streamingContent();
         if (content.trim()) {
-          const assistantMessage: Message = {
+          store.appendAssistantMessage({
             message_id:      `stopped-${Date.now()}`,
             conversation_id: conversationId!,
             role:            'assistant',
@@ -211,15 +211,17 @@ export const ChatStore = signalStore(
             ticket_url:      null,
             reaction:        null,
             created_at:      new Date().toISOString(),
-          };
-          store.appendAssistantMessage(assistantMessage);
+          });
           store.updateConversationMeta(conversationId!, content);
         }
 
         store.stopStreamingState();
 
-        // Reset stopped flag after brief delay so next sendMessage works cleanly
-        setTimeout(() => { priv()._isStopped = false; }, 200);
+        // Reset _isStopped after a safe delay
+        // 500ms ensures all pending async callbacks from old stream have fired
+        setTimeout(() => {
+          priv()._isStopped = false;
+        }, 500);
       },
 
     };
