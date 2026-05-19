@@ -27,7 +27,7 @@ export class MessageBubbleComponent {
   protected readonly showFeedbackPanel = signal(false);
   protected readonly selectedFeedback  = signal<string | null>(null);
 
-  protected readonly feedbackOptions = [
+  protected readonly feedbackOptions: readonly { label: string; value: string }[] = [
     { label: 'Wrong information',   value: 'wrong_info' },
     { label: 'Not relevant',        value: 'not_relevant' },
     { label: 'Incomplete answer',   value: 'incomplete' },

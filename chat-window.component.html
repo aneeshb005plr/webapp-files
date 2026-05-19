@@ -19,99 +19,105 @@
     </div>
   </div>
 
-  <!-- Messages scrollable area -->
-  <div
-    class="chat-window__messages"
-    #scrollContainer
-    (scroll)="onScroll($event)"
-    role="log"
-    aria-live="polite"
-    aria-label="Conversation messages"
-  >
+  <!-- Messages + scroll button wrapper — position: relative here -->
+  <div class="chat-window__messages-wrap">
 
-    <!-- Load more older messages -->
-    @if (store.hasMoreMessages()) {
-      <div class="chat-window__load-more">
-        <button
-          class="chat-window__load-more-btn"
-          (click)="onLoadMore()"
-          [disabled]="store.isLoadingMessages()"
-        >
-          @if (store.isLoadingMessages()) { Loading... }
-          @else { ↑ Load earlier messages }
-        </button>
-      </div>
+    <!-- Scroll to bottom button — inside wrapper, above messages -->
+    @if (showScrollDown()) {
+      <button
+        class="chat-window__scroll-down"
+        (click)="scrollToBottomClick()"
+        aria-label="Scroll to bottom"
+        title="Scroll to latest message"
+      >↓</button>
     }
 
-    <!-- Skeleton loading -->
-    @if (store.isLoadingMessages() && store.messages().length === 0) {
-      <div class="chat-window__skeleton-wrap">
-        <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
-        <div class="chat-window__skeleton chat-window__skeleton--user"></div>
-        <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
-      </div>
-    }
+    <!-- Scrollable messages area -->
+    <div
+      class="chat-window__messages"
+      #scrollContainer
+      (scroll)="onScroll($event)"
+      role="log"
+      aria-live="polite"
+      aria-label="Conversation messages"
+    >
 
-    <!-- Starter prompts — empty conversation -->
-    @if (store.isEmptyConversation() && !store.isStreaming()) {
-      <app-starter-prompts (promptSelected)="onStarterPrompt($event)" />
-    }
+      <!-- Load more older messages -->
+      @if (store.hasMoreMessages()) {
+        <div class="chat-window__load-more">
+          <button
+            class="chat-window__load-more-btn"
+            (click)="onLoadMore()"
+            [disabled]="store.isLoadingMessages()"
+          >
+            @if (store.isLoadingMessages()) { Loading... }
+            @else { ↑ Load earlier messages }
+          </button>
+        </div>
+      }
 
-    <!-- Messages list -->
-    @for (msg of store.messages(); track msg.message_id) {
-      <app-message-bubble [message]="msg" [isStreaming]="false" />
-    }
+      <!-- Skeleton loading -->
+      @if (store.isLoadingMessages() && store.messages().length === 0) {
+        <div class="chat-window__skeleton-wrap">
+          <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
+          <div class="chat-window__skeleton chat-window__skeleton--user"></div>
+          <div class="chat-window__skeleton chat-window__skeleton--assistant"></div>
+        </div>
+      }
 
-    <!-- Streaming assistant message -->
-    @if (store.isStreaming() && store.streamingContent()) {
-      <app-message-bubble
-        [message]="{
-          message_id:      'streaming',
-          conversation_id: store.activeConversationId()!,
-          role:            'assistant',
-          content:         store.streamingContent(),
-          sources:         null,
-          ticket_url:      null,
-          reaction:        null,
-          created_at:      ''
-        }"
-        [isStreaming]="true"
+      <!-- Starter prompts — empty conversation -->
+      @if (store.isEmptyConversation() && !store.isStreaming()) {
+        <app-starter-prompts (promptSelected)="onStarterPrompt($event)" />
+      }
+
+      <!-- Messages list -->
+      @for (msg of store.messages(); track msg.message_id) {
+        <app-message-bubble [message]="msg" [isStreaming]="false" />
+      }
+
+      <!-- Streaming assistant message -->
+      @if (store.isStreaming() && store.streamingContent()) {
+        <app-message-bubble
+          [message]="{
+            message_id:      'streaming',
+            conversation_id: store.activeConversationId()!,
+            role:            'assistant',
+            content:         store.streamingContent(),
+            sources:         null,
+            ticket_url:      null,
+            reaction:        null,
+            created_at:      ''
+          }"
+          [isStreaming]="true"
+        />
+      }
+
+      <!-- Thinking indicator -->
+      <app-thinking-indicator
+        [isVisible]="store.isStreaming() && !store.streamingContent()"
+        [events]="store.thinkingEvents()"
       />
-    }
 
-    <!-- Thinking indicator -->
-    <app-thinking-indicator
-      [isVisible]="store.isStreaming() && !store.streamingContent()"
-      [events]="store.thinkingEvents()"
-    />
+      <!-- Error banner -->
+      @if (store.error()) {
+        <div class="chat-window__error" role="alert">
+          <span class="chat-window__error-text">⚠ {{ store.error() }}</span>
+          <button
+            class="chat-window__error-close"
+            (click)="store.clearError()"
+            aria-label="Dismiss error"
+          >✕</button>
+        </div>
+      }
 
-    <!-- Error banner -->
-    @if (store.error()) {
-      <div class="chat-window__error" role="alert">
-        <span class="chat-window__error-text">⚠ {{ store.error() }}</span>
-        <button
-          class="chat-window__error-close"
-          (click)="store.clearError()"
-          aria-label="Dismiss error"
-        >✕</button>
-      </div>
-    }
+    </div>
+    <!-- END scrollable messages -->
 
   </div>
-  <!-- END messages area -->
+  <!-- END messages-wrap -->
 
   <!-- Message input -->
   <app-message-input (messageSent)="forceScrollDown()" />
 
 </div>
 <!-- END chat-window -->
-
-<!-- Scroll to bottom button — outside .chat-window, positioned by :host -->
-@if (showScrollDown()) {
-  <button
-    class="chat-window__scroll-down"
-    (click)="scrollToBottomClick()"
-    aria-label="Scroll to bottom"
-    title="Scroll to latest message"
-  >↓</button>
-}

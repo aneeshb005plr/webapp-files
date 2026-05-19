@@ -6,7 +6,6 @@
   height:         100%;
   overflow:       hidden;
   background:     var(--app-bg);
-  position:       relative;   // scroll-down button positions relative to host
 }
 
 .chat-window {
@@ -64,10 +63,64 @@
     color:     var(--app-text-secondary);
   }
 
+  // ── Messages wrap — contains scroll button + messages ────────────────────
+  // position: relative here so scroll button positions correctly
+  // flex: 1 so it fills available space between header and input
+  &__messages-wrap {
+    flex:       1;
+    position:   relative;
+    overflow:   hidden;    // clip children but scroll button stays via absolute
+    display:    flex;
+    flex-direction: column;
+  }
+
+  // ── Scroll to bottom button ───────────────────────────────────────────────
+  // Positioned inside messages-wrap at bottom-right
+  // z-index above messages, below input area
+  &__scroll-down {
+    position:      absolute;
+    bottom:        1rem;
+    right:         1.25rem;
+    width:         36px;
+    height:        36px;
+    border-radius: 50%;
+    background:    var(--app-bg-container);
+    border:        1px solid var(--app-border);
+    box-shadow:    0 2px 12px var(--app-shadow);
+    cursor:        pointer;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    font-size:     1rem;
+    font-weight:   600;
+    color:         var(--app-text-primary);
+    z-index:       20;
+    transition:    background 0.15s ease,
+                   color 0.15s ease,
+                   border-color 0.15s ease,
+                   transform 0.1s ease;
+    animation:     scroll-btn-in 0.2s ease;
+    padding:       0;
+
+    @keyframes scroll-btn-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    &:hover {
+      background:   #d04a02;
+      color:        white;
+      border-color: #d04a02;
+      box-shadow:   0 4px 16px rgba(208, 74, 2, 0.35);
+      transform:    translateY(-1px);
+    }
+  }
+
   // ── Messages scrollable area ──────────────────────────────────────────────
   &__messages {
     flex:       1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding:    1rem 1.25rem;
     display:    flex;
     flex-direction: column;
@@ -140,35 +193,7 @@
     100% { background-position: -200% 0; }
   }
 
-  // ── Scroll to bottom button ──────────────────────────────────────────────
-  // Positioned via :host (which has position: relative)
-  // Sits above input area at bottom-right of the chat window
-  &__scroll-down {
-    position:      absolute;
-    bottom:        96px;    // above input area height (~80px) + gap
-    right:         1.25rem;
-    width:         36px;
-    height:        36px;
-    border-radius: 50%;
-    background:    var(--app-bg-container);
-    border:        1px solid var(--app-border);
-    box-shadow:    0 2px 12px var(--app-shadow);
-    cursor:        pointer;
-    display:       flex;
-    align-items:   center;
-    justify-content: center;
-    font-size:     1rem;
-    font-weight:   600;
-    color:         var(--app-text-primary);
-    z-index:       20;
-    transition:    background 0.15s ease,
-                   color 0.15s ease,
-                   box-shadow 0.15s ease,
-                   transform 0.1s ease;
-    animation:     scroll-btn-in 0.2s ease;
 
-    @keyframes scroll-btn-in {
-      from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 

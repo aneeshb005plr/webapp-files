@@ -25,8 +25,8 @@ import { timeAgo }      from '../../utils/time-ago.util';
 export class SidebarComponent {
   protected readonly store = inject(ChatStore);
 
-  // Ticks every 60 seconds — forces timeAgo to recalculate in template
-  // OnPush components only re-render on signal changes — this provides the trigger
+  // Ticks every 60 seconds — forces OnPush re-render for timeAgo recalculation
+  // Using signal so Angular's template tracking picks it up automatically
   protected readonly tick = toSignal(
     interval(60_000).pipe(startWith(0)),
     { initialValue: 0 }
@@ -34,9 +34,12 @@ export class SidebarComponent {
 
   protected readonly confirmDeleteId = signal<string | null>(null);
 
-  // timeAgo as method so it recalculates when tick() changes
+  // Must read tick() INSIDE the template expression for OnPush to detect change
+  // This method reads tick() which makes the template depend on it
   protected getTimeAgo(dateStr: string | null): string {
-    this.tick(); // read tick signal — creates dependency so template updates every minute
+    // Reading tick() here creates a signal dependency in the template
+    // When tick updates every 60s → template re-evaluates → timeAgo recalculates
+    const _tick = this.tick();
     return timeAgo(dateStr);
   }
 
