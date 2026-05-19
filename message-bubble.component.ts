@@ -22,8 +22,17 @@ export class MessageBubbleComponent {
   readonly isStreaming = input<boolean>(false);
 
   protected readonly store       = inject(ChatStore);
-  protected readonly copied      = signal(false);
-  protected readonly showSources = signal(false);
+  protected readonly copied           = signal(false);
+  protected readonly showSources      = signal(false);
+  protected readonly showFeedbackPanel = signal(false);
+  protected readonly selectedFeedback  = signal<string | null>(null);
+
+  protected readonly feedbackOptions = [
+    { label: 'Wrong information',   value: 'wrong_info' },
+    { label: 'Not relevant',        value: 'not_relevant' },
+    { label: 'Incomplete answer',   value: 'incomplete' },
+    { label: 'Hard to understand',  value: 'unclear' },
+  ];
 
   async copyMessage(): Promise<void> {
     try {
@@ -43,6 +52,28 @@ export class MessageBubbleComponent {
     this.store.addReaction({ messageId: msg.message_id, reaction });
   }
 
+  onThumbsDown(): void {
+    const msg = this.message();
+    if (msg.reaction === 'thumbs_down') return;  // already submitted
+    this.showFeedbackPanel.set(true);
+    this.selectedFeedback.set(null);
+  }
+
+  selectFeedback(value: string): void {
+    this.selectedFeedback.set(value);
+  }
+
+  submitFeedback(): void {
+    if (!this.selectedFeedback()) return;
+    this.store.addReaction({ messageId: this.message().message_id, reaction: 'thumbs_down' });
+    this.showFeedbackPanel.set(false);
+  }
+
+  cancelFeedback(): void {
+    this.showFeedbackPanel.set(false);
+    this.selectedFeedback.set(null);
+  }
+
   get formattedContent(): string {
     let html = this.message().content;
 
@@ -52,11 +83,18 @@ export class MessageBubbleComponent {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Markdown links: [text](url) → <a href="url">text</a>
-    // Must run BEFORE other replacements
+    // Markdown links: [text](url) → clickable link
+    // Handles: [text](https://...) — full URLs only
+    // Also handles: [text](#) or [text]() — empty/hash URLs shown as plain text span
     html = html.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="bubble__inline-link">$1</a>'
+      /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="bubble__inline-link">$1 ↗</a>'
+    );
+
+    // Markdown links with empty or hash URL — render as styled span not link
+    html = html.replace(
+      /\[([^\]]+)\]\((#|)\)/g,
+      '<span class="bubble__inline-text">$1</span>'
     );
 
     // Headers: ### → h3, ## → h2, # → h1

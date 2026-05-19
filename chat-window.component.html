@@ -19,7 +19,7 @@
     </div>
   </div>
 
-  <!-- Messages scrollable area — ref used for scroll management -->
+  <!-- Messages scrollable area -->
   <div
     class="chat-window__messages"
     #scrollContainer
@@ -37,11 +37,8 @@
           (click)="onLoadMore()"
           [disabled]="store.isLoadingMessages()"
         >
-          @if (store.isLoadingMessages()) {
-            Loading...
-          } @else {
-            ↑ Load earlier messages
-          }
+          @if (store.isLoadingMessages()) { Loading... }
+          @else { ↑ Load earlier messages }
         </button>
       </div>
     }
@@ -55,17 +52,14 @@
       </div>
     }
 
-    <!-- Starter prompts -->
+    <!-- Starter prompts — empty conversation -->
     @if (store.isEmptyConversation() && !store.isStreaming()) {
       <app-starter-prompts (promptSelected)="onStarterPrompt($event)" />
     }
 
     <!-- Messages list -->
     @for (msg of store.messages(); track msg.message_id) {
-      <app-message-bubble
-        [message]="msg"
-        [isStreaming]="false"
-      />
+      <app-message-bubble [message]="msg" [isStreaming]="false" />
     }
 
     <!-- Streaming assistant message -->
@@ -104,22 +98,20 @@
     }
 
   </div>
+  <!-- END messages area -->
 
   <!-- Message input -->
   <app-message-input (messageSent)="forceScrollDown()" />
 
 </div>
+<!-- END chat-window -->
 
-<!-- Scroll to bottom button — outside chat-window, positioned via :host -->
+<!-- Scroll to bottom button — outside .chat-window, positioned by :host -->
 @if (showScrollDown()) {
   <button
     class="chat-window__scroll-down"
     (click)="scrollToBottomClick()"
     aria-label="Scroll to bottom"
     title="Scroll to latest message"
-  >
-    ↓
-  </button>
+  >↓</button>
 }
-
-</div>

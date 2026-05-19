@@ -5,11 +5,14 @@ import {
   Component,
   inject,
   signal,
-}                    from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ChatStore }   from '../../store/chat.store';
+} from '@angular/core';
+import { FormsModule }  from '@angular/forms';
+import { toSignal }     from '@angular/core/rxjs-interop';
+import { interval }     from 'rxjs';
+import { startWith }    from 'rxjs/operators';
+import { ChatStore }    from '../../store/chat.store';
 import { Conversation } from '../../models/chat.models';
-import { timeAgo }     from '../../utils/time-ago.util';
+import { timeAgo }      from '../../utils/time-ago.util';
 
 @Component({
   selector:        'app-sidebar',
@@ -22,10 +25,20 @@ import { timeAgo }     from '../../utils/time-ago.util';
 export class SidebarComponent {
   protected readonly store = inject(ChatStore);
 
-  // Tracks which conversation is showing inline delete confirmation
+  // Ticks every 60 seconds — forces timeAgo to recalculate in template
+  // OnPush components only re-render on signal changes — this provides the trigger
+  protected readonly tick = toSignal(
+    interval(60_000).pipe(startWith(0)),
+    { initialValue: 0 }
+  );
+
   protected readonly confirmDeleteId = signal<string | null>(null);
 
-  protected timeAgo = timeAgo;
+  // timeAgo as method so it recalculates when tick() changes
+  protected getTimeAgo(dateStr: string | null): string {
+    this.tick(); // read tick signal — creates dependency so template updates every minute
+    return timeAgo(dateStr);
+  }
 
   onNewConversation(): void {
     this.store.createConversation();

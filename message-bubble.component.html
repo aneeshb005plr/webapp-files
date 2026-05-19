@@ -63,27 +63,61 @@
 
       @if (!isStreaming()) {
         <div class="bubble__actions" role="group" aria-label="Message actions">
-          <button
-            class="bubble__action-btn"
-            (click)="copyMessage()"
-            [title]="copied() ? 'Copied!' : 'Copy'"
-            [class.bubble__action-btn--active]="copied()"
-          >{{ copied() ? '✓' : '⎘' }}</button>
 
+          <!-- Copy button -->
           <button
             class="bubble__action-btn"
-            [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_up'"
+            [class.bubble__action-btn--copied]="copied()"
+            (click)="copyMessage()"
+            [title]="copied() ? 'Copied!' : 'Copy response'"
+            aria-label="Copy response"
+          >{{ copied() ? '✓ Copied' : '⎘ Copy' }}</button>
+
+          <!-- Thumbs up — highlighted green when selected -->
+          <button
+            class="bubble__action-btn bubble__action-btn--reaction"
+            [class.bubble__action-btn--thumbs-up]="message().reaction === 'thumbs_up'"
+            [class.bubble__action-btn--faded]="message().reaction === 'thumbs_down'"
             (click)="setReaction('thumbs_up')"
-            title="Helpful"
+            [title]="message().reaction === 'thumbs_up' ? 'Marked as helpful' : 'Mark as helpful'"
+            [attr.aria-pressed]="message().reaction === 'thumbs_up'"
           >👍</button>
 
+          <!-- Thumbs down — shows negative feedback panel when clicked -->
           <button
-            class="bubble__action-btn"
-            [class.bubble__action-btn--reaction-active]="message().reaction === 'thumbs_down'"
-            (click)="setReaction('thumbs_down')"
-            title="Not helpful"
+            class="bubble__action-btn bubble__action-btn--reaction"
+            [class.bubble__action-btn--thumbs-down]="message().reaction === 'thumbs_down'"
+            [class.bubble__action-btn--faded]="message().reaction === 'thumbs_up'"
+            (click)="onThumbsDown()"
+            [title]="message().reaction === 'thumbs_down' ? 'Feedback given' : 'Not helpful'"
+            [attr.aria-pressed]="message().reaction === 'thumbs_down'"
           >👎</button>
+
         </div>
+
+        <!-- Negative feedback panel -->
+        @if (showFeedbackPanel()) {
+          <div class="bubble__feedback-panel" role="dialog" aria-label="Feedback">
+            <p class="bubble__feedback-title">What went wrong?</p>
+            <div class="bubble__feedback-options">
+              @for (opt of feedbackOptions; track opt.value) {
+                <button
+                  class="bubble__feedback-opt"
+                  [class.bubble__feedback-opt--selected]="selectedFeedback() === opt.value"
+                  (click)="selectFeedback(opt.value)"
+                >{{ opt.label }}</button>
+              }
+            </div>
+            <div class="bubble__feedback-actions">
+              <button class="bubble__feedback-cancel" (click)="cancelFeedback()">Cancel</button>
+              <button
+                class="bubble__feedback-submit"
+                [disabled]="!selectedFeedback()"
+                (click)="submitFeedback()"
+              >Submit</button>
+            </div>
+          </div>
+        }
       }
     </div>
   }

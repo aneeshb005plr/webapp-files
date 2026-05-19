@@ -141,36 +141,43 @@
   }
 
   // ── Scroll to bottom button ──────────────────────────────────────────────
+  // Positioned via :host (which has position: relative)
+  // Sits above input area at bottom-right of the chat window
   &__scroll-down {
     position:      absolute;
-    bottom:        90px;          // above input area
-    right:         1.5rem;
+    bottom:        96px;    // above input area height (~80px) + gap
+    right:         1.25rem;
     width:         36px;
     height:        36px;
     border-radius: 50%;
     background:    var(--app-bg-container);
     border:        1px solid var(--app-border);
-    box-shadow:    0 2px 8px var(--app-shadow);
+    box-shadow:    0 2px 12px var(--app-shadow);
     cursor:        pointer;
     display:       flex;
     align-items:   center;
     justify-content: center;
     font-size:     1rem;
+    font-weight:   600;
     color:         var(--app-text-primary);
-    transition:    background 0.15s ease, box-shadow 0.15s ease;
-    z-index:       10;
-    animation:     fade-in 0.2s ease;
+    z-index:       20;
+    transition:    background 0.15s ease,
+                   color 0.15s ease,
+                   box-shadow 0.15s ease,
+                   transform 0.1s ease;
+    animation:     scroll-btn-in 0.2s ease;
 
-    @keyframes fade-in {
+    @keyframes scroll-btn-in {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     &:hover {
-      background:  #d04a02;
-      color:       white;
+      background:   #d04a02;
+      color:        white;
       border-color: #d04a02;
-      box-shadow:  0 4px 12px rgba(208, 74, 2, 0.3);
+      box-shadow:   0 4px 16px rgba(208, 74, 2, 0.35);
+      transform:    translateY(-1px);
     }
   }
 
