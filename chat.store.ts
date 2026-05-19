@@ -1,4 +1,5 @@
 // src/app/chat/store/chat.store.ts
+// Root store — composes all features, coordinates cross-feature logic.
 
 import { computed, inject }                   from '@angular/core';
 import {
@@ -30,7 +31,6 @@ export const ChatStore = signalStore(
   withProps(() => ({
     _chatService:        inject(ChatService),
     _streamSubscription: null as Subscription | null,
-    // _isStopped prevents stopped stream callbacks from affecting next message
     _isStopped:          false,
   })),
 
@@ -38,6 +38,7 @@ export const ChatStore = signalStore(
   withFeature(store => withChatMessages(store._chatService)),
   withChatStreaming(),
 
+  // ── Cross-feature computed ──────────────────────────────────────────────
   withComputed(store => ({
 
     filteredConversations: computed(() => {
@@ -59,19 +60,23 @@ export const ChatStore = signalStore(
     ),
   })),
 
+  // ── Cross-feature methods ───────────────────────────────────────────────
   withMethods(store => {
 
     const priv = () => store as unknown as StorePrivate;
 
-    // Saves assistant message and reloads title from backend
     function finaliseStream(
       conversationId: string,
       content:        string,
-      ticketUrl:      string | null
+      ticketUrl:      string | null,
+      isFirstMessage: boolean,
+      realMessageId?: string       // real backend message_id for reactions
     ): void {
       if (content.trim()) {
         const msg: Message = {
-          message_id:      `streamed-${Date.now()}`,
+          // Use real message_id from backend if available — required for reactions
+          // Falls back to local ID only if backend didn't return one
+          message_id:      realMessageId ?? `streamed-${Date.now()}`,
           conversation_id: conversationId,
           role:            'assistant',
           content,
@@ -83,45 +88,56 @@ export const ChatStore = signalStore(
         store.appendAssistantMessage(msg);
         store.updateConversationMeta(conversationId, content);
       }
+
       store.stopStreamingState();
-      // Reload conversations after delay to pick up backend title generation
-      setTimeout(() => store.loadConversations(), 1500);
+
+      // Only reload conversations list for FIRST message
+      // This picks up the backend-generated title
+      if (isFirstMessage) {
+        setTimeout(() => store.loadConversations(), 2000);
+      }
     }
 
     return {
 
+      // Select existing conversation — loads messages
       selectConversation(conversationId: string): void {
         if (store.activeConversationId() === conversationId) return;
-        store.clearError();          // clear any error from previous conversation
+        store.clearError();
         store.selectConversation(conversationId);
         store.resetMessages();
         store.loadMessages(conversationId);
       },
 
+      // Create new conversation — NO loadMessages call
+      // New conversation has 0 messages — shows starter prompts immediately
       createConversation(): void {
-        store.clearError();          // clear any error before new conversation
+        store.clearError();
         store.createConversation({
-          onCreated: (id: string) => {
+          onCreated: (_id: string) => {
+            // Just reset messages — do NOT call loadMessages for new conversation
+            // It has zero messages so the API call is wasteful
+            // isEmptyConversation computed handles showing starter prompts
             store.resetMessages();
-            store.loadMessages(id);
           },
         });
       },
 
       sendMessage(message: string): void {
         const conversationId = store.activeConversationId();
-        if (!conversationId) return;
+        if (!conversationId || store.isStreaming()) return;
 
-        // Guard — do not send if still streaming
-        if (store.isStreaming()) return;
+        // Determine if this is the first user message in this conversation
+        // Used to decide whether to reload conversations (for title update)
+        const currentMessages = store.messages();
+        const userMessages    = currentMessages.filter(m => m.role === 'user');
+        const isFirstMessage  = userMessages.length === 0;
 
         // Clean up any previous subscription
         const existingSub = priv()._streamSubscription;
         if (existingSub && !existingSub.closed) existingSub.unsubscribe();
         priv()._streamSubscription = null;
-
-        // Clear stopped flag for fresh stream
-        priv()._isStopped = false;
+        priv()._isStopped          = false;
 
         // Optimistic user message
         store.appendMessage({
@@ -142,7 +158,6 @@ export const ChatStore = signalStore(
           .streamMessage(conversationId, message)
           .subscribe({
             next: event => {
-              // Ignore events from a stopped stream
               if (priv()._isStopped) return;
 
               const result = store.handleSseEvent(event);
@@ -150,7 +165,13 @@ export const ChatStore = signalStore(
 
               if (result.type === 'done') {
                 priv()._streamSubscription = null;
-                finaliseStream(conversationId, result.content, result.ticketUrl);
+                finaliseStream(
+                  conversationId,
+                  result.content,
+                  result.ticketUrl,
+                  isFirstMessage,
+                  result.messageId    // pass real backend message_id
+                );
               }
 
               if (result.type === 'error') {
@@ -162,7 +183,6 @@ export const ChatStore = signalStore(
             },
 
             error: () => {
-              // Only show error if this stream was NOT manually stopped
               if (!priv()._isStopped) {
                 store.stopStreamingState();
                 store.setError('Connection error. Please try again.');
@@ -171,10 +191,15 @@ export const ChatStore = signalStore(
             },
 
             complete: () => {
-              // Ignore if manually stopped
               if (priv()._isStopped) return;
               if (store.isStreaming()) {
-                finaliseStream(conversationId, store.streamingContent(), null);
+                // No real messageId on complete — message was already saved via done event
+                finaliseStream(
+                  conversationId,
+                  store.streamingContent(),
+                  null,
+                  isFirstMessage
+                );
               }
               priv()._streamSubscription = null;
             },
@@ -186,22 +211,17 @@ export const ChatStore = signalStore(
       stopStreaming(): void {
         const conversationId = store.activeConversationId();
 
-        // Mark as stopped BEFORE unsubscribing
-        // This ensures error/complete callbacks are ignored
         priv()._isStopped = true;
 
-        // Unsubscribe
         const sub = priv()._streamSubscription;
         if (sub && !sub.closed) sub.unsubscribe();
         priv()._streamSubscription = null;
 
-        // Tell backend
         if (conversationId) {
           store._chatService.stopStreaming(conversationId)
             .subscribe({ error: () => {} });
         }
 
-        // Save partial content
         const content = store.streamingContent();
         if (content.trim()) {
           store.appendAssistantMessage({
@@ -219,13 +239,8 @@ export const ChatStore = signalStore(
 
         store.stopStreamingState();
 
-        // Reset _isStopped after a safe delay
-        // 500ms ensures all pending async callbacks from old stream have fired
-        setTimeout(() => {
-          priv()._isStopped = false;
-        }, 500);
+        setTimeout(() => { priv()._isStopped = false; }, 500);
       },
-
     };
   }),
 

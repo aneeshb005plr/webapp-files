@@ -2,14 +2,14 @@
 
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   inject,
   signal,
+  OnInit,
+  OnDestroy,
 } from '@angular/core';
 import { FormsModule }  from '@angular/forms';
-import { toSignal }     from '@angular/core/rxjs-interop';
-import { interval }     from 'rxjs';
-import { startWith }    from 'rxjs/operators';
 import { ChatStore }    from '../../store/chat.store';
 import { Conversation } from '../../models/chat.models';
 import { timeAgo }      from '../../utils/time-ago.util';
@@ -22,24 +22,38 @@ import { timeAgo }      from '../../utils/time-ago.util';
   templateUrl:     './sidebar.component.html',
   styleUrl:        './sidebar.component.scss',
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ChatStore);
-
-  // Ticks every 60 seconds — forces OnPush re-render for timeAgo recalculation
-  // Using signal so Angular's template tracking picks it up automatically
-  protected readonly tick = toSignal(
-    interval(60_000).pipe(startWith(0)),
-    { initialValue: 0 }
-  );
+  private  readonly cdr   = inject(ChangeDetectorRef);
 
   protected readonly confirmDeleteId = signal<string | null>(null);
 
-  // Must read tick() INSIDE the template expression for OnPush to detect change
-  // This method reads tick() which makes the template depend on it
+  // Timer reference for cleanup
+  private tickTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Current tick value — plain number, not a signal
+  // We manually call markForCheck() every minute to force re-render
+  private currentTick = 0;
+
+  ngOnInit(): void {
+    // Update timeAgo every 60 seconds by triggering change detection
+    this.tickTimer = setInterval(() => {
+      this.currentTick++;
+      this.cdr.markForCheck();  // forces OnPush component to re-render
+    }, 60_000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer);
+      this.tickTimer = null;
+    }
+  }
+
+  // Called from template — currentTick is read so re-renders when it changes
   protected getTimeAgo(dateStr: string | null): string {
-    // Reading tick() here creates a signal dependency in the template
-    // When tick updates every 60s → template re-evaluates → timeAgo recalculates
-    const _tick = this.tick();
+    // currentTick read here ensures this recalculates on each tick
+    void this.currentTick;
     return timeAgo(dateStr);
   }
 

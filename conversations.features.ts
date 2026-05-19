@@ -126,16 +126,15 @@ export function withChatConversations(chatService: ChatService) {
 
       updateConversationMeta(conversationId: string, lastMessage: string): void {
         patchState(store, {
-          conversations: store.conversations().map(c =>
-            c.conversation_id === conversationId
-              ? {
-                  ...c,
-                  last_message:    lastMessage.substring(0, 100),
-                  last_message_at: new Date().toISOString(),
-                  message_count:   c.message_count + 1,
-                }
-              : c
-          ),
+          conversations: store.conversations().map(c => {
+            if (c.conversation_id !== conversationId) return c;
+            return {
+              ...c,
+              last_message:    lastMessage.substring(0, 100),
+              last_message_at: new Date().toISOString(),
+              message_count:   c.message_count + 1,
+            };
+          }),
         });
       },
     }))
