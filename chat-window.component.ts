@@ -12,6 +12,7 @@ import {
   signal,
   viewChild,
   effect,
+  untracked,
 } from '@angular/core';
 import { ChatStore }                  from '../../store/chat.store';
 import { MessageBubbleComponent }     from '../message-bubble/message-bubble.component';
@@ -41,45 +42,49 @@ export class ChatWindowComponent implements AfterViewInit, OnDestroy {
   private readonly scrollContainer =
     viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
 
-  // Auto-scroll flag — false when user has scrolled up
   private shouldAutoScroll = true;
-
-  // Show "scroll to bottom" button when user is scrolled up
-  protected readonly showScrollDown = signal(false);
-
-  // Debounce scroll during streaming to prevent lag
   private scrollRafId: number | null = null;
 
+  protected readonly showScrollDown = signal(false);
+
   constructor() {
-    // React to new messages — always scroll to bottom
+    // Watch message count — new message added → scroll if auto-scroll on
     effect(() => {
-      const messages = store.messages();
-      if (messages.length > 0 && this.shouldAutoScroll) {
-        this.scheduleScroll('instant');
-      }
+      const count = this.store.messages().length;
+      untracked(() => {
+        if (count > 0 && this.shouldAutoScroll) {
+          this.scheduleScroll('instant');
+        }
+      });
     });
 
-    // React to streaming tokens — smooth follow only if auto-scroll on
+    // Watch streaming tokens — follow stream if auto-scroll on
     effect(() => {
-      const content = store.streamingContent();
-      if (content && this.shouldAutoScroll) {
-        this.scheduleScroll('instant');   // instant during streaming — no lag
-      }
+      const content = this.store.streamingContent();
+      untracked(() => {
+        if (content && this.shouldAutoScroll) {
+          this.scheduleScroll('instant');
+        }
+      });
     });
 
-    // When streaming starts — always re-enable auto-scroll
-    // User sent a message so they want to see the response
+    // Watch streaming start — ALWAYS scroll when user sends message
     effect(() => {
-      if (store.isStreaming()) {
-        this.shouldAutoScroll  = true;
-        this.showScrollDown.set(false);
-        this.scheduleScroll('smooth');
-      }
+      const streaming = this.store.isStreaming();
+      untracked(() => {
+        if (streaming) {
+          this.shouldAutoScroll = true;
+          this.showScrollDown.set(false);
+          this.scheduleScroll('smooth');
+          this.cdr.markForCheck();
+        }
+      });
     });
   }
 
   ngAfterViewInit(): void {
-    this.scrollToBottom('instant');
+    // Initial scroll to bottom when component loads
+    setTimeout(() => this.scrollToBottom('instant'), 50);
   }
 
   ngOnDestroy(): void {
@@ -88,21 +93,20 @@ export class ChatWindowComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // Called by message-input when user sends — force scroll down
+  // Called by message-input via (messageSent) output
   forceScrollDown(): void {
     this.shouldAutoScroll = true;
     this.showScrollDown.set(false);
-    this.scheduleScroll('smooth');
+    // Use setTimeout to ensure DOM has updated with new message
+    setTimeout(() => this.scrollToBottom('smooth'), 50);
   }
 
   onScroll(event: Event): void {
-    const el              = event.target as HTMLElement;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const el             = event.target as HTMLElement;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 
-    // If user scrolled up more than 150px — stop auto scroll
-    if (distanceFromBottom > 150) {
+    if (distFromBottom > 150) {
       this.shouldAutoScroll = false;
-      // Show scroll-to-bottom button only if there are messages
       if (this.store.messages().length > 0 || this.store.streamingContent()) {
         this.showScrollDown.set(true);
         this.cdr.markForCheck();
@@ -123,41 +127,35 @@ export class ChatWindowComponent implements AfterViewInit, OnDestroy {
   onLoadMore(): void {
     const conv   = this.store.activeConversationId();
     const before = this.store.nextBefore();
-    if (conv && before) {
-      // Capture scroll height before loading so we can restore position
-      const el = this.scrollContainer()?.nativeElement;
-      const scrollHeightBefore = el?.scrollHeight ?? 0;
+    if (!conv || !before) return;
 
-      this.store.loadMoreMessages({ conversationId: conv, before });
+    const el               = this.scrollContainer()?.nativeElement;
+    const heightBefore     = el?.scrollHeight ?? 0;
 
-      // After messages load, restore scroll position so it doesn't jump
-      setTimeout(() => {
-        if (el) {
-          const added = el.scrollHeight - scrollHeightBefore;
-          el.scrollTop = added;   // keeps same visual position
-        }
-      }, 50);
-    }
+    this.store.loadMoreMessages({ conversationId: conv, before });
+
+    // Restore scroll position after older messages load
+    setTimeout(() => {
+      if (el) {
+        el.scrollTop = el.scrollHeight - heightBefore;
+      }
+    }, 100);
   }
 
   onStarterPrompt(prompt: string): void {
     this.store.sendMessage(prompt);
-    // Force scroll down when starter prompt clicked
     this.shouldAutoScroll = true;
+    this.showScrollDown.set(false);
   }
 
   trackByMessageId(_: number, msg: { message_id: string }): string {
     return msg.message_id;
   }
 
-  // ── Private helpers ─────────────────────────────────────────────────────
-
   private scheduleScroll(behavior: ScrollBehavior): void {
-    // Cancel any pending scroll frame
     if (this.scrollRafId !== null) {
       cancelAnimationFrame(this.scrollRafId);
     }
-    // Schedule outside Angular zone to avoid triggering change detection
     this.zone.runOutsideAngular(() => {
       this.scrollRafId = requestAnimationFrame(() => {
         this.scrollToBottom(behavior);

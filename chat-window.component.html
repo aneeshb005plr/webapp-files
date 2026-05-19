@@ -105,19 +105,21 @@
 
   </div>
 
-  <!-- Scroll to bottom button — shown when user has scrolled up -->
-  @if (showScrollDown()) {
-    <button
-      class="chat-window__scroll-down"
-      (click)="scrollToBottomClick()"
-      aria-label="Scroll to bottom"
-      title="Scroll to latest message"
-    >
-      ↓
-    </button>
-  }
-
   <!-- Message input -->
   <app-message-input (messageSent)="forceScrollDown()" />
+
+</div>
+
+<!-- Scroll to bottom button — outside chat-window, positioned via :host -->
+@if (showScrollDown()) {
+  <button
+    class="chat-window__scroll-down"
+    (click)="scrollToBottomClick()"
+    aria-label="Scroll to bottom"
+    title="Scroll to latest message"
+  >
+    ↓
+  </button>
+}
 
 </div>
