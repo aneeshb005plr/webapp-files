@@ -1,20 +1,5 @@
 // src/app/chat/store/chat.store.ts
-// Root store — composes all features and coordinates cross-feature logic.
-//
-// Feature responsibilities:
-//   withChatUI()            — sidebar, search, error (isolated)
-//   withChatConversations() — CRUD, selection (isolated)
-//   withChatMessages()      — loading, pagination, reactions (isolated)
-//   withChatStreaming()      — SSE state, thinking events (isolated)
-//
-// Coordinator responsibilities (this file):
-//   - Inject ChatService via withProps
-//   - sendMessage()   — needs messages + streaming + conversations
-//   - stopStreaming()  — needs streaming + backend call
-//   - selectConversation() override — resets messages + loads fresh
-//   - filteredConversations computed — needs conversations + searchQuery
-//   - canSend computed — needs streaming + activeConversationId
-//   - onInit hook — loads conversations automatically
+// Root store — composes all features, coordinates cross-feature logic.
 
 import { computed, inject }                   from '@angular/core';
 import {
@@ -37,7 +22,6 @@ import { withChatUI }                         from './features/ui.feature';
 export const ChatStore = signalStore(
   { providedIn: 'root' },
 
-  // ── Feature composition ─────────────────────────────────────────────────
   withChatUI(),
 
   withProps(() => ({
@@ -49,7 +33,7 @@ export const ChatStore = signalStore(
   withFeature(store => withChatMessages(store._chatService)),
   withChatStreaming(),
 
-  // ── Cross-feature computed signals ──────────────────────────────────────
+  // ── Cross-feature computed ──────────────────────────────────────────────
   withComputed(store => ({
 
     filteredConversations: computed(() => {
@@ -74,6 +58,7 @@ export const ChatStore = signalStore(
   // ── Cross-feature methods ───────────────────────────────────────────────
   withMethods(store => ({
 
+    // Override selectConversation — also resets + loads messages
     selectConversation(conversationId: string): void {
       if (store.activeConversationId() === conversationId) return;
       store.selectConversation(conversationId);
@@ -81,11 +66,21 @@ export const ChatStore = signalStore(
       store.loadMessages(conversationId);
     },
 
+    // Override createConversation — loads messages after creation
+    createConversation(): void {
+      store.createConversation({
+        onCreated: (conversationId: string) => {
+          // Reset messages and load (empty for new session — shows starter prompts)
+          store.resetMessages();
+          store.loadMessages(conversationId);
+        },
+      });
+    },
+
     sendMessage(message: string): void {
       const conversationId = store.activeConversationId();
       if (!conversationId || store.isStreaming()) return;
 
-      // Optimistic user message
       const userMessage: Message = {
         message_id:      `temp-${Date.now()}`,
         conversation_id: conversationId,
@@ -125,12 +120,10 @@ export const ChatStore = signalStore(
               store.setError(result.message);
             }
           },
-
           error: () => {
             store.stopStreamingState();
             store.setError('Connection error. Please try again.');
           },
-
           complete: () => {
             const content = store.streamingContent();
             if (content && store.isStreaming()) {
@@ -190,7 +183,6 @@ export const ChatStore = signalStore(
     },
   })),
 
-  // ── Lifecycle ───────────────────────────────────────────────────────────
   withHooks({
     onInit(store) {
       store.loadConversations();

@@ -1,7 +1,4 @@
 // src/app/chat/store/features/conversations.feature.ts
-// Manages conversation sessions — CRUD, selection, search filtering.
-// Methods use rxMethod for all async HTTP calls.
-// Cross-feature: setError from UiState is handled in chat.store.ts coordinator.
 
 import { computed }                           from '@angular/core';
 import { tapResponse }                        from '@ngrx/operators';
@@ -34,19 +31,11 @@ export function withChatConversations(chatService: ChatService) {
     withState<ConversationsState>(conversationsInitialState),
 
     withComputed(store => ({
-
       activeConversation: computed(() =>
         store.conversations().find(
           c => c.conversation_id === store.activeConversationId()
         ) ?? null
       ),
-
-      filteredConversations: computed(() => {
-        // searchQuery comes from UiState — exposed via chat.store.ts withFeature
-        // Components use store.filteredConversations() which is computed here
-        // Search filtering delegated to chat.store.ts where both states are visible
-        return store.conversations();
-      }),
     })),
 
     withMethods(store => ({
@@ -58,10 +47,7 @@ export function withChatConversations(chatService: ChatService) {
             chatService.getSessions().pipe(
               tapResponse({
                 next: (conversations: Conversation[]) =>
-                  patchState(store, {
-                    conversations,
-                    isLoadingConversations: false,
-                  }),
+                  patchState(store, { conversations, isLoadingConversations: false }),
                 error: () =>
                   patchState(store, { isLoadingConversations: false }),
               })
@@ -70,17 +56,21 @@ export function withChatConversations(chatService: ChatService) {
         )
       ),
 
-      createConversation: rxMethod<void>(
+      // Returns conversation_id so coordinator can loadMessages after
+      createConversation: rxMethod<{ onCreated: (id: string) => void }>(
         pipe(
-          switchMap(() =>
+          switchMap(({ onCreated }) =>
             chatService.createSession().pipe(
               tapResponse({
-                next: (conversation: Conversation) =>
+                next: (conversation: Conversation) => {
                   patchState(store, {
                     conversations:        [conversation, ...store.conversations()],
                     activeConversationId: conversation.conversation_id,
-                  }),
-                error: () => { /* error handled in chat.store.ts */ },
+                  });
+                  // Notify coordinator to load messages
+                  onCreated(conversation.conversation_id);
+                },
+                error: () => { /* error handled in coordinator */ },
               })
             )
           )
@@ -98,10 +88,10 @@ export function withChatConversations(chatService: ChatService) {
             chatService.deleteSession(conversationId).pipe(
               tapResponse({
                 next: () => {
-                  const remaining  = store.conversations().filter(
+                  const remaining = store.conversations().filter(
                     c => c.conversation_id !== conversationId
                   );
-                  const wasActive  = store.activeConversationId() === conversationId;
+                  const wasActive = store.activeConversationId() === conversationId;
                   patchState(store, {
                     conversations:        remaining,
                     activeConversationId: wasActive
@@ -109,7 +99,7 @@ export function withChatConversations(chatService: ChatService) {
                       : store.activeConversationId(),
                   });
                 },
-                error: () => { /* error handled in chat.store.ts */ },
+                error: () => { },
               })
             )
           )
@@ -127,18 +117,14 @@ export function withChatConversations(chatService: ChatService) {
                       c.conversation_id === id ? { ...c, title } : c
                     ),
                   }),
-                error: () => { /* error handled in chat.store.ts */ },
+                error: () => { },
               })
             )
           )
         )
       ),
 
-      // Called by streaming feature after assistant message completes
-      updateConversationMeta(
-        conversationId: string,
-        lastMessage:    string
-      ): void {
+      updateConversationMeta(conversationId: string, lastMessage: string): void {
         patchState(store, {
           conversations: store.conversations().map(c =>
             c.conversation_id === conversationId

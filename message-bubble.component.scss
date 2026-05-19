@@ -95,11 +95,11 @@
 
   // ── User message ──────────────────────────────────────────────────────────
   &--user {
-    flex-direction: row-reverse;
+    flex-direction: row-reverse;   // avatar on RIGHT, content on RIGHT
     align-items:    flex-start;
 
     .bubble__content {
-      align-items: flex-end;
+      align-items: flex-end;       // text aligns to right side
     }
 
     .bubble__user-text {
@@ -114,6 +114,15 @@
       max-width:     520px;
       word-wrap:     break-word;
     }
+  }
+
+  // Ensure user avatar stays right
+  &--user &__user-avatar {
+    order: 1;   // always last = rightmost
+  }
+
+  &--user &__content {
+    order: 0;   // content before avatar in DOM but visually right via row-reverse
   }
 
   // ── Streaming cursor ──────────────────────────────────────────────────────
