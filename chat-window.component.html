@@ -90,8 +90,12 @@
     <!-- Error -->
     @if (store.error()) {
       <div class="chat-window__error" role="alert">
-        <span>⚠ {{ store.error() }}</span>
-        <button (click)="store.clearError()">✕</button>
+        <span class="chat-window__error-text">⚠ {{ store.error() }}</span>
+        <button
+          class="chat-window__error-close"
+          (click)="store.clearError()"
+          aria-label="Dismiss error"
+        >✕</button>
       </div>
     }
 

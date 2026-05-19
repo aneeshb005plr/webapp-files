@@ -92,12 +92,14 @@ export const ChatStore = signalStore(
 
       selectConversation(conversationId: string): void {
         if (store.activeConversationId() === conversationId) return;
+        store.clearError();          // clear any error from previous conversation
         store.selectConversation(conversationId);
         store.resetMessages();
         store.loadMessages(conversationId);
       },
 
       createConversation(): void {
+        store.clearError();          // clear any error before new conversation
         store.createConversation({
           onCreated: (id: string) => {
             store.resetMessages();
