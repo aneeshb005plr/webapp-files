@@ -129,10 +129,12 @@ export function withChatStreaming() {
             const content = store.streamingContent();
             patchState(store, streamingInitialState);
             return {
-              type:      'done',
+              type:        'done',
               content,
-              ticketUrl: d.ticket_url,
-              messageId: d.message_id,   // real backend message_id for reactions
+              ticketUrl:   d.ticket_url,
+              messageId:   d.message_id as string | undefined,
+              sources:     (d.sources ?? []) as Source[],
+              suggestions: (d.suggestions ?? []) as string[],
             };
           }
 
