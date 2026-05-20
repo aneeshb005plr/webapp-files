@@ -62,7 +62,7 @@
                     }
                     @if (source.rerank_score) {
                       <span class="bubble__citation-score">
-                        {{ (source.rerank_score * 100).toFixed(0) }}% match
+                        {{ getScoreLabel(source.rerank_score) }}
                       </span>
                     }
                   </div>

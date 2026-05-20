@@ -19,6 +19,7 @@ import { MessageBubbleComponent }     from '../message-bubble/message-bubble.com
 import { ThinkingIndicatorComponent } from '../thinking-indicator/thinking-indicator.component';
 import { MessageInputComponent }      from '../message-input/message-input.component';
 import { StarterPromptsComponent }    from '../starter-prompts/starter-prompts.component';
+import { SuggestionChipsComponent }   from '../suggestion-chips/suggestion-chips.component';
 
 @Component({
   selector:        'app-chat-window',
@@ -29,6 +30,7 @@ import { StarterPromptsComponent }    from '../starter-prompts/starter-prompts.c
     ThinkingIndicatorComponent,
     MessageInputComponent,
     StarterPromptsComponent,
+    SuggestionChipsComponent,
   ],
   templateUrl: './chat-window.component.html',
   styleUrl:    './chat-window.component.scss',
@@ -146,6 +148,12 @@ export class ChatWindowComponent implements AfterViewInit, OnDestroy {
     this.store.sendMessage(prompt);
     this.shouldAutoScroll = true;
     this.showScrollDown.set(false);
+  }
+
+  onSuggestionClick(suggestion: string): void {
+    this.store.clearSuggestions();
+    this.store.sendMessage(suggestion);
+    this.forceScrollDown();
   }
 
   trackByMessageId(_: number, msg: { message_id: string }): string {

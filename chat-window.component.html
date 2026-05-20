@@ -92,6 +92,14 @@
         />
       }
 
+      <!-- Suggestion chips — grounded follow-up questions, shown after response -->
+      @if (!store.isStreaming() && store.suggestions().length > 0) {
+        <app-suggestion-chips
+          [suggestions]="store.suggestions()"
+          (chipClicked)="onSuggestionClick($event)"
+        />
+      }
+
       <!-- Thinking indicator -->
       <app-thinking-indicator
         [isVisible]="store.isStreaming() && !store.streamingContent()"

@@ -69,6 +69,15 @@ export class MessageBubbleComponent {
     this.showFeedbackPanel.set(false);
   }
 
+  // Rerank scores from vector API are raw (0-10+ range), not percentages
+  // Show as quality labels instead of misleading percentages
+  getScoreLabel(score: number): string {
+    if (score >= 8)  return 'High relevance';
+    if (score >= 5)  return 'Good match';
+    if (score >= 3)  return 'Partial match';
+    return 'Low relevance';
+  }
+
   cancelFeedback(): void {
     this.showFeedbackPanel.set(false);
     this.selectedFeedback.set(null);
@@ -76,6 +85,18 @@ export class MessageBubbleComponent {
 
   get formattedContent(): string {
     let html = this.message().content;
+
+    // Remove SharePoint source URLs from text if they appear in citations panel
+    // Prevents duplicate display — user sees them in numbered citations below
+    const sources = this.message().sources ?? [];
+    if (sources.length > 0) {
+      const sourceUrls = new Set(sources.map(s => s.source_url).filter(Boolean));
+      // Remove markdown links whose URL is in sources: [text](url) → text
+      html = html.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+        (match, text, url) => sourceUrls.has(url) ? text : match
+      );
+    }
 
     // Escape any existing HTML to prevent XSS
     html = html
