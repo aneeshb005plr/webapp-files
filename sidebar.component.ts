@@ -5,6 +5,7 @@ import {
   ChangeDetectorRef,
   Component,
   inject,
+  NgZone,
   signal,
   OnInit,
   OnDestroy,
@@ -23,8 +24,9 @@ import { timeAgo }      from '../../utils/time-ago.util';
   styleUrl:        './sidebar.component.scss',
 })
 export class SidebarComponent implements OnInit, OnDestroy {
-  protected readonly store = inject(ChatStore);
-  private  readonly cdr   = inject(ChangeDetectorRef);
+  protected readonly store   = inject(ChatStore);
+  private  readonly cdr     = inject(ChangeDetectorRef);
+  private  readonly ngZone  = inject(NgZone);
 
   protected readonly confirmDeleteId = signal<string | null>(null);
 
@@ -36,10 +38,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private currentTick = 0;
 
   ngOnInit(): void {
-    // Update timeAgo every 60 seconds by triggering change detection
+    // Update timeAgo every 60 seconds
+    // Run inside Angular zone so OnPush change detection triggers
     this.tickTimer = setInterval(() => {
       this.currentTick++;
-      this.cdr.markForCheck();  // forces OnPush component to re-render
+      // NgZone.run() ensures Angular's change detection picks this up
+      // even though setInterval runs outside Angular zone by default
+      this.ngZone.run(() => this.cdr.markForCheck());
     }, 60_000);
   }
 

@@ -86,23 +86,30 @@ export class MessageBubbleComponent {
   get formattedContent(): string {
     let html = this.message().content;
 
-    // Remove SharePoint source URLs from text if they appear in citations panel
-    // Prevents duplicate display — user sees them in numbered citations below
-    const sources = this.message().sources ?? [];
-    if (sources.length > 0) {
-      const sourceUrls = new Set(sources.map(s => s.source_url).filter(Boolean));
-      // Remove markdown links whose URL is in sources: [text](url) → text
-      html = html.replace(
-        /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-        (match, text, url) => sourceUrls.has(url) ? text : match
-      );
-    }
-
-    // Escape any existing HTML to prevent XSS
+    // Escape HTML first to prevent XSS
     html = html
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+
+    // Remove markdown links whose URL matches a citation source
+    // Run AFTER HTML escape — compare decoded URLs from sources against escaped content
+    // SharePoint URLs have & chars that become &amp; after escape
+    const sources = this.message().sources ?? [];
+    if (sources.length > 0) {
+      const sourceUrls = new Set(
+        sources
+          .map(s => s.source_url)
+          .filter(Boolean)
+          // Escape & in source URLs to match post-escape content
+          .map(url => url.replace(/&/g, '&amp;'))
+      );
+      // Replace [text](url) where url is a source → keep just text (no link)
+      html = html.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        (_match, text, url) => sourceUrls.has(url) ? text : `[${text}](${url})`
+      );
+    }
 
     // Markdown links: [text](url) → clickable link
     // Handles: [text](https://...) — full URLs only
