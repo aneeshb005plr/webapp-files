@@ -115,6 +115,20 @@
         </li>
       }
 
+      <!-- Load more conversations -->
+      @if (store.hasMoreConversations() && !store.searchQuery()) {
+        <li class="sidebar__load-more">
+          <button
+            class="sidebar__load-more-btn"
+            (click)="onLoadMore()"
+            [disabled]="store.isLoadingMoreConvs()"
+          >
+            @if (store.isLoadingMoreConvs()) { Loading... }
+            @else { Load more conversations }
+          </button>
+        </li>
+      }
+
       <!-- Empty state -->
       @if (store.filteredConversations().length === 0) {
         <li class="sidebar__empty">
