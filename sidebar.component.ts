@@ -90,6 +90,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.confirmDeleteId.set(null);
   }
 
+  onLoadMore(): void {
+    this.store.loadMoreConversations();
+  }
+
   onToggleSidebar(): void {
     this.store.toggleSidebar();
   }

@@ -35,8 +35,13 @@ export class ChatService {
 
   // ── Session management ──────────────────────────────────────────────────────
 
-  getSessions(): Observable<Conversation[]> {
-    return this.http.get<Conversation[]>(`${this.baseUrl}/sessions`);
+  getSessions(before?: string): Observable<{ conversations: Conversation[]; has_more: boolean }> {
+    const params: Record<string, string> = {};
+    if (before) params['before'] = before;
+    return this.http.get<{ conversations: Conversation[]; has_more: boolean }>(
+      `${this.baseUrl}/sessions`,
+      { params }
+    );
   }
 
   createSession(): Observable<Conversation> {

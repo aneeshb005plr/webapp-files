@@ -18,12 +18,16 @@ export interface ConversationsState {
   conversations:          Conversation[];
   activeConversationId:   string | null;
   isLoadingConversations: boolean;
+  hasMoreConversations:   boolean;
+  isLoadingMoreConvs:     boolean;
 }
 
 export const conversationsInitialState: ConversationsState = {
   conversations:          [],
   activeConversationId:   null,
   isLoadingConversations: false,
+  hasMoreConversations:   false,
+  isLoadingMoreConvs:     false,
 };
 
 export function withChatConversations(chatService: ChatService) {
@@ -46,13 +50,42 @@ export function withChatConversations(chatService: ChatService) {
           switchMap(() =>
             chatService.getSessions().pipe(
               tapResponse({
-                next: (conversations: Conversation[]) =>
-                  patchState(store, { conversations, isLoadingConversations: false }),
+                next: (result) =>
+                  patchState(store, {
+                    conversations:        result.conversations,
+                    hasMoreConversations: result.has_more,
+                    isLoadingConversations: false,
+                  }),
                 error: () =>
                   patchState(store, { isLoadingConversations: false }),
               })
             )
           )
+        )
+      ),
+
+      loadMoreConversations: rxMethod<void>(
+        pipe(
+          tap(() => patchState(store, { isLoadingMoreConvs: true })),
+          switchMap(() => {
+            // Use last conversation's last_message_at as cursor
+            const convs   = store.conversations();
+            const oldest  = convs[convs.length - 1];
+            const before  = oldest?.last_message_at ?? undefined;
+            return chatService.getSessions(before).pipe(
+              tapResponse({
+                next: result =>
+                  patchState(store, {
+                    // Append older conversations
+                    conversations:        [...convs, ...result.conversations],
+                    hasMoreConversations: result.has_more,
+                    isLoadingMoreConvs:   false,
+                  }),
+                error: () =>
+                  patchState(store, { isLoadingMoreConvs: false }),
+              })
+            );
+          })
         )
       ),
 

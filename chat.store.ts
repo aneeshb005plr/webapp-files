@@ -116,14 +116,15 @@ export const ChatStore = signalStore(
       },
 
       // Create new conversation — NO loadMessages call
-      // New conversation has 0 messages — shows starter prompts immediately
+      // Guard: if active conversation already has 0 messages — reuse it, don't create another
       createConversation(): void {
+        // If already on an empty new conversation — just focus input, don't create another
+        if (store.isEmptyConversation()) return;
+
         store.clearError();
+        store.clearSuggestions();
         store.createConversation({
           onCreated: (_id: string) => {
-            // Just reset messages — do NOT call loadMessages for new conversation
-            // It has zero messages so the API call is wasteful
-            // isEmptyConversation computed handles showing starter prompts
             store.resetMessages();
           },
         });

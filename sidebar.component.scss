@@ -357,6 +357,36 @@
     }
   }
 
+  // ── Load more ─────────────────────────────────────────────────────────────
+  &__load-more {
+    list-style: none;
+    padding:    0.5rem 0.25rem;
+    text-align: center;
+  }
+
+  &__load-more-btn {
+    width:         100%;
+    background:    none;
+    border:        1px solid var(--app-border);
+    border-radius: 6px;
+    padding:       0.4rem;
+    font-size:     0.75rem;
+    color:         var(--app-text-secondary);
+    cursor:        pointer;
+    font-family:   inherit;
+    transition:    border-color 0.15s ease, color 0.15s ease;
+
+    &:hover:not(:disabled) {
+      border-color: #d04a02;
+      color:        #d04a02;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor:  not-allowed;
+    }
+  }
+
   // ── Empty state ────────────────────────────────────────────────────────────
   &__empty {
     padding:    2.5rem 1rem;
