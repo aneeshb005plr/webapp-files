@@ -8,6 +8,7 @@ import {
   withMethods,
   withState,
 }                    from '@ngrx/signals';
+import type { Source } from '../../models/chat.models';
 import {
   AgentThinkingData,
   DoneData,
@@ -54,7 +55,7 @@ export function withChatStreaming() {
 
       handleSseEvent(
         event: SseEvent
-      ): { type: 'done'; content: string; ticketUrl: string | null }
+      ): { type: 'done'; content: string; ticketUrl: string | null; messageId?: string; sources: Source[]; suggestions: string[] }
         | { type: 'error'; message: string }
         | null {
 

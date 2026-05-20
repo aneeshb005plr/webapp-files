@@ -11,7 +11,7 @@ import {
   withProps,
 }                                             from '@ngrx/signals';
 import { Subscription }                       from 'rxjs';
-import { Message }                            from '../models/chat.models';
+import { Message, Source }                    from '../models/chat.models';
 import { ChatService }                        from '../services/chat.service';
 import { withChatConversations }              from './features/conversations.feature';
 import { withChatMessages }                   from './features/messages.feature';
@@ -70,17 +70,17 @@ export const ChatStore = signalStore(
       content:        string,
       ticketUrl:      string | null,
       isFirstMessage: boolean,
-      realMessageId?: string       // real backend message_id for reactions
+      realMessageId?: string,
+      sources:        Source[] = [],
+      suggestions:    string[] = [],
     ): void {
       if (content.trim()) {
         const msg: Message = {
-          // Use real message_id from backend if available — required for reactions
-          // Falls back to local ID only if backend didn't return one
           message_id:      realMessageId ?? `streamed-${Date.now()}`,
           conversation_id: conversationId,
           role:            'assistant',
           content,
-          sources:         null,
+          sources:         sources.length > 0 ? sources : null,
           ticket_url:      ticketUrl,
           reaction:        null,
           created_at:      new Date().toISOString(),
@@ -91,8 +91,14 @@ export const ChatStore = signalStore(
 
       store.stopStreamingState();
 
-      // Only reload conversations list for FIRST message
-      // This picks up the backend-generated title
+      // Set grounded suggestions — only shown when search found results
+      if (suggestions.length > 0) {
+        store.setSuggestions(suggestions);
+      } else {
+        store.clearSuggestions();
+      }
+
+      // Only reload conversations list for FIRST message (title update)
       if (isFirstMessage) {
         setTimeout(() => store.loadConversations(), 2000);
       }
@@ -170,7 +176,9 @@ export const ChatStore = signalStore(
                   result.content,
                   result.ticketUrl,
                   isFirstMessage,
-                  result.messageId    // pass real backend message_id
+                  result.messageId,
+                  result.sources,
+                  result.suggestions,
                 );
               }
 

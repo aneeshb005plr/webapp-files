@@ -95,8 +95,10 @@ export interface TokenData {
 }
 
 export interface DoneData {
-  message_id: string;
-  ticket_url: string | null;
+  message_id:  string;
+  ticket_url:  string | null;
+  sources:     Source[];      // citations from vector search
+  suggestions: string[];      // grounded follow-up questions
 }
 
 export interface ErrorData {
@@ -128,6 +130,7 @@ export interface ChatState {
   error:                  string | null;
   sidebarCollapsed:       boolean;
   searchQuery:            string;
+  suggestions:            string[];   // grounded follow-up questions for active message
 }
 
 // ── API request bodies ────────────────────────────────────────────────────────

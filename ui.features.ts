@@ -8,12 +8,14 @@ export interface UiState {
   sidebarCollapsed: boolean;
   searchQuery:      string;
   error:            string | null;
+  suggestions:      string[];   // grounded follow-up questions
 }
 
 export const uiInitialState: UiState = {
   sidebarCollapsed: false,
   searchQuery:      '',
   error:            null,
+  suggestions:      [],
 };
 
 export function withChatUI() {
@@ -39,6 +41,14 @@ export function withChatUI() {
 
       clearError(): void {
         patchState(store, { error: null });
+      },
+
+      setSuggestions(suggestions: string[]): void {
+        patchState(store, { suggestions });
+      },
+
+      clearSuggestions(): void {
+        patchState(store, { suggestions: [] });
       },
     }))
   );
