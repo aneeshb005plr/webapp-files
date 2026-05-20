@@ -487,10 +487,25 @@
 
   // ── Markdown elements ─────────────────────────────────────────────────────
   &__inline-link {
-    color:                #d04a02;
-    text-decoration:      underline;
+    color:                 #d04a02;
+    text-decoration:       underline;
+    text-decoration-style: dotted;
     text-underline-offset: 2px;
-    &:hover { color: #b53d00; }
+    font-weight:           500;
+    transition:            color 0.15s ease;
+
+    &:hover {
+      color:           #b53d00;
+      text-decoration-style: solid;
+    }
+
+    &:visited { color: #d04a02; }  // prevent browser blue visited colour
+  }
+
+  // Plain text for empty/hash links - no link appearance
+  &__inline-text {
+    color:       var(--app-text-primary);
+    font-weight: 500;
   }
 
   &__para {
