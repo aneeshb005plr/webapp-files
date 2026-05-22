@@ -60,10 +60,8 @@
                     @if (source.application) {
                       <span class="bubble__citation-app">{{ source.application }}</span>
                     }
-                    @if (source.rerank_score) {
-                      <span class="bubble__citation-score">
-                        {{ getScoreLabel(source.rerank_score) }}
-                      </span>
+                    @if (source.application) {
+                      <span class="bubble__citation-app">{{ source.application }}</span>
                     }
                   </div>
                   @if (source.source_url && source.source_url.startsWith('http')) {

@@ -69,15 +69,6 @@ export class MessageBubbleComponent {
     this.showFeedbackPanel.set(false);
   }
 
-  // Rerank scores from vector API are raw (0-10+ range), not percentages
-  // Show as quality labels instead of misleading percentages
-  getScoreLabel(score: number): string {
-    if (score >= 8)  return 'High relevance';
-    if (score >= 5)  return 'Good match';
-    if (score >= 3)  return 'Partial match';
-    return 'Low relevance';
-  }
-
   cancelFeedback(): void {
     this.showFeedbackPanel.set(false);
     this.selectedFeedback.set(null);

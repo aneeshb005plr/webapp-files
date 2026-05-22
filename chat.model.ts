@@ -4,10 +4,11 @@
 
 // ── Source reference from vector search ──────────────────────────────────────
 export interface Source {
-  file_name:    string;
-  source_url:   string;
-  application:  string | null;
-  rerank_score: number;
+  file_name:   string;
+  source_url:  string;
+  application: string | null;
+  // rerank_score removed — new Vector API only returns cited chunks
+  // (quality already guaranteed, score no longer provided)
 }
 
 // ── Individual message ────────────────────────────────────────────────────────
