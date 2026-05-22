@@ -22,16 +22,17 @@
   <!-- Main content -->
   <main class="chat-shell__main">
 
-    @if (store.activeConversationId()) {
-      <!-- Chat window when conversation selected -->
+    @if (store.activeConversationId() || store.isPendingNewConversation()) {
+      <!-- Show chat window for both active conversations AND pending new chat -->
+      <!-- isPendingNewConversation: session not yet created — shows starter prompts -->
       <app-chat-window />
     } @else {
-      <!-- No conversation selected -->
+      <!-- No conversation selected and not pending — landing state -->
       <div class="chat-shell__empty">
         <div class="chat-shell__empty-icon">💬</div>
         <h3 class="chat-shell__empty-title">NextGen AMS IT Support</h3>
         <p class="chat-shell__empty-subtitle">
-          Select a conversation from the sidebar or click "New Chat" to get started
+          Select a conversation from the sidebar or start a new one
         </p>
         <button
           class="chat-shell__empty-btn"

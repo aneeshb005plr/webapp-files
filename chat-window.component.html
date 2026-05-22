@@ -80,7 +80,7 @@
         <app-message-bubble
           [message]="{
             message_id:      'streaming',
-            conversation_id: store.activeConversationId()!,
+            conversation_id: store.activeConversationId() ?? 'pending',
             role:            'assistant',
             content:         store.streamingContent(),
             sources:         null,

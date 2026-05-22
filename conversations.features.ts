@@ -93,27 +93,6 @@ export function withChatConversations(chatService: ChatService) {
         )
       ),
 
-      // Returns conversation_id so coordinator can loadMessages after
-      createConversation: rxMethod<{ onCreated: (id: string) => void }>(
-        pipe(
-          switchMap(({ onCreated }) =>
-            chatService.createSession().pipe(
-              tapResponse({
-                next: (conversation: Conversation) => {
-                  patchState(store, {
-                    conversations:        [conversation, ...store.conversations()],
-                    activeConversationId: conversation.conversation_id,
-                  });
-                  // Notify coordinator to load messages
-                  onCreated(conversation.conversation_id);
-                },
-                error: () => { /* error handled in coordinator */ },
-              })
-            )
-          )
-        )
-      ),
-
       selectConversation(conversationId: string): void {
         if (store.activeConversationId() === conversationId) return;
         patchState(store, { activeConversationId: conversationId });

@@ -1,8 +1,15 @@
 // src/app/chat/store/chat.store.ts
 // Root store — composes all features, coordinates cross-feature logic.
+//
+// Lazy session creation pattern (2026 production standard):
+//   "New Chat" clicked  → sets isPendingNewConversation=true (local state only, NO API call)
+//   User types + sends  → creates session in DB THEN starts SSE stream
+//   User refreshes      → no orphaned empty sessions in DB ever
+//   User clicks away    → isPendingNewConversation resets (nothing to clean up)
 
 import { computed, inject }                   from '@angular/core';
 import {
+  patchState,
   signalStore,
   withComputed,
   withFeature,
@@ -49,14 +56,20 @@ export const ChatStore = signalStore(
       );
     }),
 
+    // User can send if: not streaming AND (active conversation OR pending new conv)
     canSend: computed(() =>
-      !store.isStreaming() && store.activeConversationId() !== null
+      !store.isStreaming() &&
+      (store.activeConversationId() !== null || store.isPendingNewConversation())
     ),
 
+    // Show starter prompts when: pending new conv OR active conv with no messages
     isEmptyConversation: computed(() =>
-      store.activeConversationId() !== null &&
-      store.messages().length === 0 &&
-      !store.isLoadingMessages()
+      store.isPendingNewConversation() ||
+      (
+        store.activeConversationId() !== null &&
+        store.messages().length === 0 &&
+        !store.isLoadingMessages()
+      )
     ),
   })),
 
@@ -65,7 +78,89 @@ export const ChatStore = signalStore(
 
     const priv = () => store as unknown as StorePrivate;
 
-    function finaliseStream(
+    // ── Internal: run SSE stream for a known conversationId ───────────────
+    function _streamMessage(
+      conversationId: string,
+      message:        string,
+      isFirstMessage: boolean,
+    ): void {
+      const existingSub = priv()._streamSubscription;
+      if (existingSub && !existingSub.closed) existingSub.unsubscribe();
+      priv()._streamSubscription = null;
+      priv()._isStopped          = false;
+
+      // Optimistic user message — appears immediately
+      store.appendMessage({
+        message_id:      `temp-${Date.now()}`,
+        conversation_id: conversationId,
+        role:            'user',
+        content:         message,
+        sources:         null,
+        ticket_url:      null,
+        reaction:        null,
+        created_at:      new Date().toISOString(),
+      });
+
+      store.startStreaming();
+      store.clearError();
+
+      const sub = store._chatService
+        .streamMessage(conversationId, message)
+        .subscribe({
+          next: event => {
+            if (priv()._isStopped) return;
+
+            const result = store.handleSseEvent(event);
+            if (!result) return;
+
+            if (result.type === 'done') {
+              priv()._streamSubscription = null;
+              _finaliseStream(
+                conversationId,
+                result.content,
+                result.ticketUrl,
+                isFirstMessage,
+                result.messageId,
+                result.sources,
+                result.suggestions,
+              );
+            }
+
+            if (result.type === 'error') {
+              if (!priv()._isStopped) {
+                store.setError(result.message);
+                store.stopStreamingState();
+              }
+            }
+          },
+
+          error: () => {
+            if (!priv()._isStopped) {
+              store.stopStreamingState();
+              store.setError('Connection error. Please try again.');
+            }
+            priv()._streamSubscription = null;
+          },
+
+          complete: () => {
+            if (priv()._isStopped) return;
+            if (store.isStreaming()) {
+              _finaliseStream(
+                conversationId,
+                store.streamingContent(),
+                null,
+                isFirstMessage,
+              );
+            }
+            priv()._streamSubscription = null;
+          },
+        });
+
+      priv()._streamSubscription = sub;
+    }
+
+    // ── Internal: finalise after stream completes ─────────────────────────
+    function _finaliseStream(
       conversationId: string,
       content:        string,
       ticketUrl:      string | null,
@@ -91,14 +186,13 @@ export const ChatStore = signalStore(
 
       store.stopStreamingState();
 
-      // Set grounded suggestions — only shown when search found results
       if (suggestions.length > 0) {
         store.setSuggestions(suggestions);
       } else {
         store.clearSuggestions();
       }
 
-      // Only reload conversations list for FIRST message (title update)
+      // Reload conversations only after first message — picks up backend title
       if (isFirstMessage) {
         setTimeout(() => store.loadConversations(), 2000);
       }
@@ -106,117 +200,76 @@ export const ChatStore = signalStore(
 
     return {
 
-      // Select existing conversation — loads messages
+      // ── Select existing conversation ─────────────────────────────────────
       selectConversation(conversationId: string): void {
         if (store.activeConversationId() === conversationId) return;
+
+        // Cancel pending new conversation if user clicks an existing one
+        if (store.isPendingNewConversation()) {
+          store.setPendingNewConversation(false);
+        }
+
         store.clearError();
+        store.clearSuggestions();
         store.selectConversation(conversationId);
         store.resetMessages();
         store.loadMessages(conversationId);
       },
 
-      // Create new conversation — NO loadMessages call
-      // Guard: if active conversation already has 0 messages — reuse it, don't create another
+      // ── New Chat — lazy creation (NO API call) ───────────────────────────
+      // Sets a pending flag — actual session created when first message sent.
+      // This prevents orphaned empty sessions on refresh.
       createConversation(): void {
-        // If already on an empty new conversation — just focus input, don't create another
-        if (store.isEmptyConversation()) return;
+        // Already pending or already on empty conversation — do nothing
+        if (store.isPendingNewConversation() || store.isEmptyConversation()) return;
 
         store.clearError();
         store.clearSuggestions();
-        store.createConversation({
-          onCreated: (_id: string) => {
-            store.resetMessages();
-          },
-        });
+
+        // Deselect any active conversation
+        patchState(store, { activeConversationId: null });
+        store.resetMessages();
+
+        // Mark as pending — UI shows starter prompts, input is enabled (canSend handles it)
+        store.setPendingNewConversation(true);
       },
 
+      // ── Send message — creates session lazily if pending ─────────────────
       sendMessage(message: string): void {
-        const conversationId = store.activeConversationId();
-        if (!conversationId || store.isStreaming()) return;
+        if (store.isStreaming()) return;
 
-        // Determine if this is the first user message in this conversation
-        // Used to decide whether to reload conversations (for title update)
-        const currentMessages = store.messages();
-        const userMessages    = currentMessages.filter(m => m.role === 'user');
-        const isFirstMessage  = userMessages.length === 0;
+        // ── Lazy session creation ──────────────────────────────────────────
+        // If pending new conversation, create the session NOW (user has committed)
+        if (store.isPendingNewConversation()) {
+          store._chatService.createSession().subscribe({
+            next: conversation => {
+              // Session created — update state
+              patchState(store, {
+                conversations:            [conversation, ...store.conversations()],
+                activeConversationId:     conversation.conversation_id,
+                isPendingNewConversation: false,
+              });
 
-        // Clean up any previous subscription
-        const existingSub = priv()._streamSubscription;
-        if (existingSub && !existingSub.closed) existingSub.unsubscribe();
-        priv()._streamSubscription = null;
-        priv()._isStopped          = false;
-
-        // Optimistic user message
-        store.appendMessage({
-          message_id:      `temp-${Date.now()}`,
-          conversation_id: conversationId,
-          role:            'user',
-          content:         message,
-          sources:         null,
-          ticket_url:      null,
-          reaction:        null,
-          created_at:      new Date().toISOString(),
-        });
-
-        store.startStreaming();
-        store.clearError();
-
-        const sub = store._chatService
-          .streamMessage(conversationId, message)
-          .subscribe({
-            next: event => {
-              if (priv()._isStopped) return;
-
-              const result = store.handleSseEvent(event);
-              if (!result) return;
-
-              if (result.type === 'done') {
-                priv()._streamSubscription = null;
-                finaliseStream(
-                  conversationId,
-                  result.content,
-                  result.ticketUrl,
-                  isFirstMessage,
-                  result.messageId,
-                  result.sources,
-                  result.suggestions,
-                );
-              }
-
-              if (result.type === 'error') {
-                if (!priv()._isStopped) {
-                  store.setError(result.message);
-                  store.stopStreamingState();
-                }
-              }
+              // Start stream — this IS the first message (brand new session)
+              _streamMessage(conversation.conversation_id, message, true);
             },
-
             error: () => {
-              if (!priv()._isStopped) {
-                store.stopStreamingState();
-                store.setError('Connection error. Please try again.');
-              }
-              priv()._streamSubscription = null;
-            },
-
-            complete: () => {
-              if (priv()._isStopped) return;
-              if (store.isStreaming()) {
-                // No real messageId on complete — message was already saved via done event
-                finaliseStream(
-                  conversationId,
-                  store.streamingContent(),
-                  null,
-                  isFirstMessage
-                );
-              }
-              priv()._streamSubscription = null;
+              store.setError('Failed to create conversation. Please try again.');
+              store.setPendingNewConversation(false);
             },
           });
+          return;
+        }
 
-        priv()._streamSubscription = sub;
+        // ── Existing conversation ──────────────────────────────────────────
+        const conversationId = store.activeConversationId();
+        if (!conversationId) return;
+
+        const isFirstMessage = store.messages().filter(m => m.role === 'user').length === 0;
+        _streamMessage(conversationId, message, isFirstMessage);
       },
 
+      // ── Stop streaming ───────────────────────────────────────────────────
       stopStreaming(): void {
         const conversationId = store.activeConversationId();
 
@@ -247,7 +300,6 @@ export const ChatStore = signalStore(
         }
 
         store.stopStreamingState();
-
         setTimeout(() => { priv()._isStopped = false; }, 500);
       },
     };
