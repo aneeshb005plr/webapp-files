@@ -68,10 +68,14 @@ export function withChatConversations(chatService: ChatService) {
         pipe(
           tap(() => patchState(store, { isLoadingMoreConvs: true })),
           switchMap(() => {
-            // Use last conversation's last_message_at as cursor
-            const convs   = store.conversations();
-            const oldest  = convs[convs.length - 1];
-            const before  = oldest?.last_message_at ?? undefined;
+            const convs  = store.conversations();
+            const oldest = convs[convs.length - 1];
+
+            // Prefer last_message_at as cursor — most reliable for date ordering
+            // Fall back to created_at if last_message_at is null (new conversation)
+            // This matches the backend's secondary sort on created_at
+            const before = oldest?.last_message_at ?? oldest?.created_at ?? undefined;
+
             return chatService.getSessions(before).pipe(
               tapResponse({
                 next: result =>
