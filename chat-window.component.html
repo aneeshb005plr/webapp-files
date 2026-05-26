@@ -10,13 +10,7 @@
         {{ store.activeConversation()?.title ?? 'New Conversation' }}
       </h2>
     </div>
-    <div class="chat-window__header-meta">
-      @if (store.activeConversation()?.message_count) {
-        <span class="chat-window__message-count">
-          {{ store.activeConversation()!.message_count }} messages
-        </span>
-      }
-    </div>
+    <div class="chat-window__header-meta"></div>
   </div>
 
   <!-- Messages + scroll button wrapper — position: relative here -->

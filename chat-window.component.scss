@@ -58,10 +58,7 @@
     flex-shrink: 0;
   }
 
-  &__message-count {
-    font-size: 0.75rem;
-    color:     var(--app-text-secondary);
-  }
+
 
   // ── Messages wrap — position:relative for scroll button ──────────────────
   &__messages-wrap {
