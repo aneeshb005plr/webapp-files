@@ -16,7 +16,10 @@
 
     <div class="bubble__content">
       <div class="bubble__text">
-        <div class="bubble__markdown" [innerHTML]="formattedContent"></div>
+        <!-- ngx-markdown MarkdownPipe: processedContent → marked (GFM) → DOMPurify → HTML -->
+        <!-- Handles: nested lists, bold headers, numbered steps, tables, inline code -->
+        <!-- DOMPurify configured in app.config.ts via SANITIZE injection token -->
+        <div class="bubble__markdown" [innerHTML]="processedContent() | markdown"></div>
         @if (isStreaming()) {
           <span class="bubble__cursor" aria-hidden="true"></span>
         }

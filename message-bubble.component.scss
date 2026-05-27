@@ -90,11 +90,128 @@
   }
 
   // ── Assistant message text ────────────────────────────────────────────────
+  // ── Markdown content — rendered by ngx-markdown MarkdownPipe ─────────────
+  // ::ng-deep reaches inside marked-generated HTML elements.
+  // Handles: nested lists, bold headers, numbered steps, tables, code blocks.
   &__markdown {
-    font-size:   0.875rem;
+    font-size:   0.9rem;
     line-height: 1.7;
     color:       var(--app-text-primary);
     word-wrap:   break-word;
+
+    ::ng-deep {
+      p {
+        margin: 0.4rem 0;
+        &:first-child { margin-top: 0; }
+        &:last-child  { margin-bottom: 0; }
+      }
+
+      h1, h2, h3, h4 {
+        font-weight: 700;
+        color:       var(--app-text-primary);
+        margin:      0.75rem 0 0.25rem;
+        line-height: 1.3;
+        &:first-child { margin-top: 0; }
+      }
+      h1 { font-size: 1.05rem; }
+      h2 { font-size: 1rem; border-bottom: 1px solid var(--app-border); padding-bottom: 0.2rem; }
+      h3 { font-size: 0.95rem; }
+      h4 { font-size: 0.9rem; font-weight: 600; }
+
+      strong, b { font-weight: 700; color: var(--app-text-primary); }
+      em, i     { font-style: italic; }
+
+      ul {
+        padding-left: 1.4rem;
+        margin:       0.35rem 0;
+        list-style:   disc;
+        ul { list-style: circle; margin: 0.15rem 0; }
+      }
+
+      ol {
+        padding-left: 1.4rem;
+        margin:       0.35rem 0;
+        list-style:   decimal;
+        ol { list-style: lower-alpha; margin: 0.15rem 0; }
+      }
+
+      li {
+        margin-bottom: 0.25rem;
+        line-height:   1.6;
+        > ul, > ol { margin-top: 0.15rem; }
+      }
+
+      code {
+        background:    var(--app-bg-hover);
+        border:        1px solid var(--app-border);
+        border-radius: 4px;
+        padding:       1px 6px;
+        font-family:   'Courier New', Courier, monospace;
+        font-size:     0.82em;
+        color:         #d04a02;
+      }
+
+      pre {
+        background:    var(--app-bg-hover);
+        border:        1px solid var(--app-border);
+        border-radius: 8px;
+        padding:       0.75rem 1rem;
+        overflow-x:    auto;
+        margin:        0.5rem 0;
+        code {
+          background: none;
+          border:     none;
+          padding:    0;
+          color:      var(--app-text-primary);
+          font-size:  0.85em;
+        }
+      }
+
+      blockquote {
+        border-left: 3px solid #d04a02;
+        margin:      0.5rem 0;
+        padding:     0.25rem 0 0.25rem 0.75rem;
+        color:       var(--app-text-secondary);
+        font-style:  italic;
+        p { margin: 0; }
+      }
+
+      hr {
+        border:     none;
+        border-top: 1px solid var(--app-border);
+        margin:     0.75rem 0;
+      }
+
+      a {
+        color:                 #d04a02;
+        text-decoration:       underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 2px;
+        font-weight:           500;
+        transition:            color 0.15s ease;
+        &:hover   { color: #b53d00; text-decoration-style: solid; }
+        &:visited { color: #d04a02; }
+      }
+
+      table {
+        width:           100%;
+        border-collapse: collapse;
+        margin:          0.5rem 0;
+        font-size:       0.85rem;
+      }
+      th {
+        background:  var(--app-bg-hover);
+        border:      1px solid var(--app-border);
+        padding:     0.4rem 0.6rem;
+        font-weight: 600;
+        text-align:  left;
+      }
+      td {
+        border:  1px solid var(--app-border);
+        padding: 0.35rem 0.6rem;
+      }
+      tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    }
   }
 
   // ── User message pill ─────────────────────────────────────────────────────

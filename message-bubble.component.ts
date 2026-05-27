@@ -1,19 +1,31 @@
 // src/app/chat/components/message-bubble/message-bubble.component.ts
+// Uses ngx-markdown v20 MarkdownPipe for proper markdown rendering.
+// DOMPurify sanitisation configured globally in app.config.ts via SANITIZE token.
+//
+// Install before using:
+//   npm install ngx-markdown@20 dompurify
+//   npm install --save-dev @types/dompurify
+//
+// app.config.ts: provideMarkdown({ sanitize: { provide: SANITIZE, useValue: sanitizeFn } })
+// See MARKDOWN_SETUP.md for full setup instructions.
 
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   signal,
-} from '@angular/core';
-import { ChatStore } from '../../store/chat.store';
-import { Message }   from '../../models/chat.models';
+}                        from '@angular/core';
+import { MarkdownPipe }  from 'ngx-markdown';
+import { ChatStore }     from '../../store/chat.store';
+import { Message }       from '../../models/chat.models';
 
 @Component({
   selector:        'app-message-bubble',
   standalone:      true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports:         [MarkdownPipe],
   templateUrl:     './message-bubble.component.html',
   styleUrl:        './message-bubble.component.scss',
 })
@@ -21,18 +33,39 @@ export class MessageBubbleComponent {
   readonly message     = input.required<Message>();
   readonly isStreaming = input<boolean>(false);
 
-  protected readonly store       = inject(ChatStore);
-  protected readonly copied           = signal(false);
-  protected readonly showSources      = signal(false);
+  protected readonly store             = inject(ChatStore);
+  protected readonly copied            = signal(false);
+  protected readonly showSources       = signal(false);
   protected readonly showFeedbackPanel = signal(false);
   protected readonly selectedFeedback  = signal<string | null>(null);
 
   protected readonly feedbackOptions: readonly { label: string; value: string }[] = [
-    { label: 'Wrong information',   value: 'wrong_info' },
-    { label: 'Not relevant',        value: 'not_relevant' },
-    { label: 'Incomplete answer',   value: 'incomplete' },
-    { label: 'Hard to understand',  value: 'unclear' },
+    { label: 'Wrong information',  value: 'wrong_info' },
+    { label: 'Not relevant',       value: 'not_relevant' },
+    { label: 'Incomplete answer',  value: 'incomplete' },
+    { label: 'Hard to understand', value: 'unclear' },
   ];
+
+  // Computed signal — strips citation source URLs from content before markdown render.
+  // Source URLs are shown in the citations panel — no need to duplicate in text.
+  // Runs reactively when message() changes (each token during streaming).
+  protected readonly processedContent = computed(() => {
+    const msg     = this.message();
+    let   content = msg.content ?? '';
+    const sources = msg.sources ?? [];
+
+    // Strip markdown links whose URL is already shown in citations panel
+    // Replaces [text](https://sharepoint.com/...) with just text
+    if (sources.length > 0) {
+      const sourceUrls = new Set(sources.map(s => s.source_url).filter(Boolean));
+      content = content.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        (_match, text, url) => sourceUrls.has(url) ? text : `[${text}](${url})`,
+      );
+    }
+
+    return content;
+  });
 
   async copyMessage(): Promise<void> {
     try {
@@ -53,8 +86,7 @@ export class MessageBubbleComponent {
   }
 
   onThumbsDown(): void {
-    const msg = this.message();
-    if (msg.reaction === 'thumbs_down') return;  // already submitted
+    if (this.message().reaction === 'thumbs_down') return;
     this.showFeedbackPanel.set(true);
     this.selectedFeedback.set(null);
   }
@@ -72,88 +104,5 @@ export class MessageBubbleComponent {
   cancelFeedback(): void {
     this.showFeedbackPanel.set(false);
     this.selectedFeedback.set(null);
-  }
-
-  get formattedContent(): string {
-    let html = this.message().content;
-
-    // Escape HTML first to prevent XSS
-    html = html
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // Remove markdown links whose URL matches a citation source
-    // Run AFTER HTML escape — compare decoded URLs from sources against escaped content
-    // SharePoint URLs have & chars that become &amp; after escape
-    const sources = this.message().sources ?? [];
-    if (sources.length > 0) {
-      const sourceUrls = new Set(
-        sources
-          .map(s => s.source_url)
-          .filter(Boolean)
-          // Escape & in source URLs to match post-escape content
-          .map(url => url.replace(/&/g, '&amp;'))
-      );
-      // Replace [text](url) where url is a source → keep just text (no link)
-      html = html.replace(
-        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-        (_match, text, url) => sourceUrls.has(url) ? text : `[${text}](${url})`
-      );
-    }
-
-    // Markdown links: [text](url) → clickable link
-    // Handles: [text](https://...) — full URLs only
-    // Also handles: [text](#) or [text]() — empty/hash URLs shown as plain text span
-    html = html.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="bubble__inline-link">$1 ↗</a>'
-    );
-
-    // Markdown links with empty or hash URL — render as styled span not link
-    html = html.replace(
-      /\[([^\]]+)\]\((#|)\)/g,
-      '<span class="bubble__inline-text">$1</span>'
-    );
-
-    // Headers: ### → h3, ## → h2, # → h1
-    html = html.replace(/^### (.+)$/gm, '<h3 class="bubble__h3">$1</h3>');
-    html = html.replace(/^## (.+)$/gm,  '<h2 class="bubble__h2">$1</h2>');
-    html = html.replace(/^# (.+)$/gm,   '<h1 class="bubble__h1">$1</h1>');
-
-    // Bold: **text**
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-    // Italic: *text*
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-    // Inline code: `code`
-    html = html.replace(/`([^`]+)`/g, '<code class="bubble__code-inline">$1</code>');
-
-    // Unordered list items: - item or * item
-    html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
-    // Wrap consecutive <li> in <ul>
-    html = html.replace(/(<li>[\s\S]*?<\/li>)(\n<li>[\s\S]*?<\/li>)*/g,
-      match => `<ul class="bubble__list">${match}</ul>`
-    );
-
-    // Numbered list items: 1. item
-    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-    // Horizontal rule: ---
-    html = html.replace(/^---$/gm, '<hr class="bubble__hr">');
-
-    // Line breaks: double newline → paragraph break
-    html = html.replace(/\n\n/g, '</p><p class="bubble__para">');
-
-    // Single newline → <br>
-    html = html.replace(/\n/g, '<br>');
-
-    // Wrap in paragraph if not already wrapped
-    if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<p')) {
-      html = `<p class="bubble__para">${html}</p>`;
-    }
-
-    return html;
   }
 }
