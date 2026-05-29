@@ -55,7 +55,7 @@ export function withChatStreaming() {
 
       handleSseEvent(
         event: SseEvent
-      ): { type: 'done'; content: string; ticketUrl: string | null; messageId?: string; sources: Source[]; suggestions: string[] }
+      ): { type: 'done'; content: string; ticketUrl: string | null; messageId?: string; sources: Source[]; suggestions: string[]; title: string | null }
         | { type: 'error'; message: string }
         | null {
 

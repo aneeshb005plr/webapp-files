@@ -100,6 +100,7 @@ export interface DoneData {
   ticket_url:  string | null;
   sources:     Source[];      // citations from vector search
   suggestions: string[];      // grounded follow-up questions
+  title:       string | null; // auto-generated title (first message only)
 }
 
 export interface ErrorData {

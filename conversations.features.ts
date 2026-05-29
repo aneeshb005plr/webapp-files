@@ -152,7 +152,7 @@ export function withChatConversations(chatService: ChatService) {
             };
           }),
         });
-      }
+      },
 
       // Update conversation title immediately from done event payload
       // Called when backend sends title in done SSE — no refresh needed
