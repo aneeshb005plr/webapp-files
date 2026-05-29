@@ -135,6 +135,7 @@ export function withChatStreaming() {
               messageId:   d.message_id as string | undefined,
               sources:     (d.sources ?? []) as Source[],
               suggestions: (d.suggestions ?? []) as string[],
+              title:       (d.title ?? null) as string | null,
             };
           }
 

@@ -123,6 +123,7 @@ export const ChatStore = signalStore(
                 result.messageId,
                 result.sources,
                 result.suggestions,
+                result.title,
               );
             }
 
@@ -168,6 +169,7 @@ export const ChatStore = signalStore(
       realMessageId?: string,
       sources:        Source[] = [],
       suggestions:    string[] = [],
+      title:          string | null = null,
     ): void {
       if (content.trim()) {
         const msg: Message = {
@@ -192,9 +194,10 @@ export const ChatStore = signalStore(
         store.clearSuggestions();
       }
 
-      // Reload conversations only after first message — picks up backend title
-      if (isFirstMessage) {
-        setTimeout(() => store.loadConversations(), 2000);
+      // Update title immediately from done payload — no setTimeout needed
+      // Backend generates title BEFORE sending done event
+      if (isFirstMessage && title) {
+        store.updateConversationTitle(conversationId, title);
       }
     }
 

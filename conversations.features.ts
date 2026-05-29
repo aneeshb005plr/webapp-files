@@ -152,6 +152,18 @@ export function withChatConversations(chatService: ChatService) {
             };
           }),
         });
+      }
+
+      // Update conversation title immediately from done event payload
+      // Called when backend sends title in done SSE — no refresh needed
+      updateConversationTitle(conversationId: string, title: string): void {
+        patchState(store, {
+          conversations: store.conversations().map(c =>
+            c.conversation_id === conversationId
+              ? { ...c, title }
+              : c
+          ),
+        });
       },
     }))
   );
